@@ -975,10 +975,7 @@ class TabClawApp {
       await this._api('DELETE', '/api/chat/history');
       this._chatContainer().innerHTML = `
         <div id="chat-empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5">
-            <path d="M3 3h18v4H3V3zm0 6h10v4H3V9zm0 6h7v4H3v-4z"/>
-          </svg>
-          <h2>TabClaw</h2>
+          <div class="brand-logo-wrap"><img src="/asset/logo_rmbg.png" class="brand-logo" /></div>
           <p>Upload tables from the sidebar, then ask questions or request operations on your data.</p>
           <div class="suggestion-chips">
             <div class="chip" onclick="app.insertSuggestion(this)">Summarize all uploaded tables</div>

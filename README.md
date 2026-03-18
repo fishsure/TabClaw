@@ -1,8 +1,10 @@
 <img src="asset/logo_rmbg.png" alt="TabClaw" width="100%" />
 
-> **Upload a table. Ask anything. TabClaw figures out the rest.**
+# TabClaw: Plan-First AI for Table Analysis
 
-TabClaw is a local AI agent for table analysis. Drop in a CSV or Excel file, describe what you want in plain language — filter, aggregate, compare, visualize patterns, merge datasets — and watch it work step by step. No SQL. No code. No cloud.
+> **Your data, your machine, your agent.**
+
+Drop in a CSV or Excel file and ask your question in plain language. TabClaw drafts an execution plan, dispatches parallel agents across your tables, distils reusable skills from every session, and delivers structured answers — entirely on your machine, no cloud required.
 
 ---
 

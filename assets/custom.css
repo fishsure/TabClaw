@@ -1,0 +1,80 @@
+/* ── Brand colours ─────────────────────────────────────── */
+:root,
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #58a6ff;
+  --md-primary-fg-color--light: #79b8ff;
+  --md-primary-fg-color--dark:  #1f6feb;
+  --md-accent-fg-color:         #58a6ff;
+  --md-default-bg-color:        #0d1117;
+  --tc-surface:                 #161b22;
+  --tc-border:                  #30363d;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:        #0969da;
+  --md-primary-fg-color--light: #218bff;
+  --md-primary-fg-color--dark:  #0550ae;
+  --md-accent-fg-color:         #0969da;
+  --tc-surface:                 #f6f8fa;
+  --tc-border:                  #d0d7de;
+}
+
+/* ── Hero section ──────────────────────────────────────── */
+.tc-hero {
+  text-align: center;
+  padding: 48px 0 32px;
+}
+
+.tc-hero img {
+  max-width: min(340px, 80vw);
+  margin-bottom: 4px;
+}
+
+.tc-tagline {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--md-default-fg-color);
+  margin: 0 0 8px;
+}
+
+.tc-sub {
+  font-size: 1rem;
+  color: var(--md-default-fg-color--light);
+  margin: 0 0 28px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tc-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* ── Demo screenshot ───────────────────────────────────── */
+.tc-demo-img {
+  border-radius: 10px;
+  border: 1px solid var(--tc-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  margin: 32px auto 0;
+  display: block;
+  max-width: 100%;
+}
+
+/* ── Badge row ─────────────────────────────────────────── */
+.tc-badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+/* ── Feature grid cards — tighten spacing ─────────────── */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > ol > li {
+  border-color: var(--tc-border);
+}

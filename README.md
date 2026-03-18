@@ -19,17 +19,27 @@ Drop in a CSV or Excel file and describe what you want. TabClaw shows you its pl
 ### 🗺️ It plans before it acts
 Before touching your data, TabClaw drafts a step-by-step execution plan and shows it to you. You can reorder steps, rewrite them, or add new ones — then approve and execute. After finishing, it does a self-check to make sure nothing was missed.
 
+<p align="center"><img src="asset/plan.png" alt="Plan Mode" width="75%" /></p>
+
+### 🤖 It runs multiple agents in parallel
+When you upload more than one table and ask a comparative question, TabClaw automatically assigns a dedicated analyst agent to each table. They run in parallel, then an aggregator synthesises their findings — highlighting where results agree (**[CONSENSUS]**) and where they conflict (**[UNCERTAIN]**).
+
+<p align="center"><img src="asset/para.png" alt="Multi-Agent Parallel Analysis" width="75%" /></p>
+
 ### 🧠 It learns from every session
 After completing a non-trivial task, TabClaw reflects on what it did and distils the pattern into a reusable **custom skill**. Next time you ask something similar, it calls that skill directly. The more you use it, the smarter it gets.
+
+<p align="center"><img src="asset/skill.png" alt="Skill Learning" width="75%" /></p>
 
 ### 💾 It remembers your preferences
 TabClaw picks up on how you like to work — preferred metrics, output format, domain terminology — and carries that context into every future conversation. You can view, edit, or clear memory anytime from the sidebar.
 
+<p align="center"><img src="asset/Memory.png" alt="Persistent Memory" width="75%" /></p>
+
 ### 🙋 It asks when it's not sure
 If a request could reasonably mean several different things, TabClaw pauses and presents you with a concise set of clarification options before proceeding. No silent wrong assumptions.
 
-### 🤖 Multiple agents work in parallel
-When you upload more than one table and ask a comparative question, TabClaw automatically assigns a dedicated analyst agent to each table. They run in parallel, then an aggregator synthesises their findings — highlighting where results agree (**[CONSENSUS]**) and where they conflict (**[UNCERTAIN]**).
+<p align="center"><img src="asset/clarify.png" alt="Intent Clarification" width="75%" /></p>
 
 ### 🛠️ Fully extensible
 You can define your own skills — write a prompt template or drop in Python code — and the agent will call them just like built-in skills. Combined with skill learning, TabClaw gradually builds a library tailored to your specific workflows.
@@ -49,13 +59,17 @@ pip install -r requirements.txt
 bash run.sh
 ```
 
-Open **http://localhost:8000** in your browser.
+Open **http://localhost:8000** in your browser. Click **一键体验** to try a guided demo scenario instantly.
+
+<p align="center"><img src="asset/try.png" alt="Demo Scenarios" width="75%" /></p>
 
 ---
 
 ## Demo
 
-<img src="asset/TabClaw_demo.png" alt="TabClaw Demo" width="100%" />
+<p align="center"><img src="asset/TabClaw_demo.png" alt="TabClaw UI" width="85%" /></p>
+
+<p align="center"><img src="asset/infer.png" alt="Agent Reasoning in Action" width="85%" /></p>
 
 ---
 

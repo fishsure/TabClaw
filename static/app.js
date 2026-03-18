@@ -383,6 +383,7 @@ class TabClawApp {
     input.style.height = 'auto';
     this._hideChatEmpty();
     this._appendUserMessage(msg);
+    this._scrollChatForce();
 
     // Intent clarification check
     this.state.clarifying = true;
@@ -956,7 +957,17 @@ class TabClawApp {
 
   _chatContainer() { return document.getElementById('chat-messages'); }
 
+  /** Only auto-scroll if user is already near the bottom (within 120px). */
   _scrollChat() {
+    const c = this._chatContainer();
+    const distFromBottom = c.scrollHeight - c.scrollTop - c.clientHeight;
+    if (distFromBottom < 120) {
+      c.scrollTop = c.scrollHeight;
+    }
+  }
+
+  /** Always scroll to bottom — used when user sends a new message. */
+  _scrollChatForce() {
     const c = this._chatContainer();
     c.scrollTop = c.scrollHeight;
   }

@@ -85,7 +85,7 @@ html, body {
 #app {
   display: grid;
   grid-template-rows: 48px 1fr;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 300px 1fr;
   height: 100vh;
   overflow: hidden;
 }
@@ -227,10 +227,11 @@ html.light .header-logo {
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 10px;
-  background: var(--primary-dark);
+  background: var(--primary-dark)33;
   color: var(--primary);
   flex-shrink: 0;
 }
+.table-item-badge.purple { background: #5a3f8033; color: var(--purple); }
 
 .table-item-actions {
   opacity: 0;

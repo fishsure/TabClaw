@@ -44,6 +44,8 @@ TabClaw picks up on how you like to work — preferred metrics, output format, d
 ### 🛠️ It extends with your own skills
 You can define your own skills — write a prompt template or drop in Python code — and the agent will call them just like built-in skills. Combined with skill learning, TabClaw gradually builds a library tailored to your specific workflows.
 
+<p align="center"><img src="asset/extend.png" alt="Custom Skills" width="75%" /></p>
+
 ### 🗜️ It compacts when conversations grow long
 As conversations accumulate, TabClaw automatically summarises prior history into a compact context block before it sends a new request — keeping the agent focused without losing important context. You can also trigger compaction manually at any time via the **Compact** button.
 

@@ -141,7 +141,7 @@ const STRINGS = {
     forgetPlaceholder: 'Forget: "my language preference"…', forgetBtn: 'Forget',
     skillsClear: '🗑 Clear', skillsAdd: '+ Add',
     memoryOverview: '📄 Overview', memoryClear: '🗑 Clear', memoryAdd: '+ Add',
-    labCredit: 'USTC Cognitive Intelligence Lab · AGI Group',
+    labCredit: 'State Key Laboratory of Cognitive Intelligence, USTC · AGI Group',
     uploading: n => `Uploading ${n}…`,
     uploaded: (n, r, c) => `Uploaded: ${n} (${r} rows × ${c} cols)`,
     uploadFailed: m => `Upload failed: ${m}`,

@@ -110,7 +110,7 @@ From the same team: **Claw-R1** is a training framework that bridges Agentic RL 
 ---
 ## Contributors
 
-**Team Members**: Shuo Yu, Daoyu Wang, Qingchuan Li
+**Team Members**: [Shuo Yu](https://fishsure.github.io/), [Daoyu Wang](https://melmaphother.github.io/), Qingchuan Li, Qingyang Mao
 
 **Supervisors**: [Mingyue Cheng](https://mingyue-cheng.github.io/), [Qi Liu](http://staff.ustc.edu.cn/~qiliuql/), Enhong Chen
 

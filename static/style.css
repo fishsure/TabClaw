@@ -1834,6 +1834,25 @@ input:checked + .code-track::after { background: var(--orange); }
 }
 html.light .compact-notice { background: var(--primary-dark)08; }
 
+/* Lab credit */
+.lab-credit {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  line-height: 1.4;
+}
+
+/* Lang toggle button */
+.lang-btn {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 28px;
+  letter-spacing: 0.02em;
+}
+
 /* Skill Learned Badge */
 .skill-learned-badge {
   display: flex;

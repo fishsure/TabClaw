@@ -61,7 +61,177 @@ const DEMO_SCENARIOS = [
   },
 ];
 
-class TabClawApp {
+// ---------------------------------------------------------------------------
+// i18n strings
+// ---------------------------------------------------------------------------
+const STRINGS = {
+  en: {
+    demoBtn: '一键体验',
+    compactBtn: 'Compact', clearChatBtn: 'Clear Chat', langBtnLabel: '中',
+    tabTables: 'Tables', tabSkills: 'Skills', tabMemory: 'Memory',
+    uploadedTables: 'Uploaded Tables',
+    uploadHint: 'Click or drop CSV / Excel files', uploadHint2: 'Multiple files supported',
+    noTablesYet: 'No tables yet.\nUpload CSV or Excel files below.',
+    builtinSkills: 'Built-in Skills', customSkills: 'Custom Skills', noCustomSkills: 'No custom skills yet.',
+    catPreferences: 'Preferences', catDomainKnowledge: 'Domain Knowledge',
+    catUserContext: 'User Context', catHistoryInsights: 'History Insights',
+    memoryEmpty: 'Empty',
+    memoryEmptyState: 'Memory is empty.\nThe system learns your preferences over time,\nor you can add items manually.',
+    chatEmptyHint: 'Upload tables from the sidebar, then ask questions or request operations on your data.',
+    chip1: 'Summarize all uploaded tables', chip2: 'Find rows where value is null',
+    chip3: 'Merge tables on a common column', chip4: 'Show top 10 rows sorted by first numeric column',
+    demoModalTitle: '🎯 Try Demo',
+    demoModalSubtitle: 'Select a scenario to auto-load data and run a complete analysis',
+    demoRunningLabel: 'Demo running:', demoStopBtn: '⏹ Stop',
+    demoStepsCount: n => `${n} steps`, demoMoreSteps: n => `+ ${n} more…`, demoStartBtn: 'Start',
+    demoStepLabel: (i, t) => `Step ${i} / ${t}`,
+    demoLoadingData: f => `⏳ Loading demo data: ${f}…`,
+    demoLoadedData: n => `✓ Loaded: ${n}`,
+    demoLoadFailed: m => `✗ Load failed: ${m}`,
+    demoComplete: (title, n) => `🎉 Done! "${title}" — ${n} steps completed.`,
+    demoStopped: '⏹ Demo stopped.',
+    planModeLabel: 'Plan Mode', planModeHint: '— review steps before execution',
+    codeToolLabel: 'Code Tool', codeToolHint: '— Python sandbox',
+    inputPlaceholder: 'Ask a question or give an instruction about your tables…',
+    planModalDefaultSubtitle: 'Review and edit steps before execution',
+    planAddStep: '+ Add Step', planCancel: 'Cancel', planExecuteBtn: 'Execute Plan',
+    tablePrev: '‹ Prev', tableNext: 'Next ›', tableDownload: '⬇ CSV',
+    tableLoading: 'Loading…',
+    tableRowsCols: (r, c) => `${r.toLocaleString()} rows × ${c} columns`,
+    tablePage: (p, t) => `Page ${p} / ${t}`,
+    moreRows: (e, s, t) => `… ${e} more rows (showing ${s} of ${t})`,
+    totalRowsLink: n => `${n.toLocaleString()} total rows`,
+    tableRowsColsShort: (r, c) => `${r} rows × ${c} cols`,
+    generatingPlan: 'Generating plan…',
+    failedGeneratePlan: m => `Failed to generate plan: ${m}`,
+    selfCheckBadge: '🔍 Self-check', selfCheckDesc: 'Verifying results against original request…',
+    multiAgentHeader: n => `🤖 Multi-Agent Analysis — ${n} specialist agents running in parallel`,
+    agentWaiting: 'Waiting…', agentAnalyzing: 'Analyzing…',
+    stepBadge: (n, t) => `Step ${n}/${t}`,
+    synthesizing: 'Synthesising findings & quantifying uncertainty…',
+    viewFull: 'View Full', resultTablesTitle: '📥 Result Tables',
+    resultTablesHint: 'Click to download or preview in chat', previewBtn: 'Preview',
+    compactingLabel: 'Compacting…',
+    chatCompactedMsg: n => `Compacted ${n} messages into a summary`,
+    historyTooShort: 'History is too short to compact', compactFailed: 'Compaction failed',
+    chatCompactedNotice: n => `Chat compacted · ${n} messages → 1 summary`,
+    chatCleared: 'Chat history cleared', tableRemoved: 'Table removed',
+    skillUpdated: 'Skill updated', skillAdded: 'Skill added',
+    skillDeleted: 'Skill deleted', skillsCleared: 'All custom skills cleared',
+    memorySaved: 'Memory saved', memoryItemDeleted: 'Memory item deleted',
+    memoryCleared: 'All memory cleared', memoryCopied: 'Copied to clipboard',
+    memoryForgot: n => `Forgot ${n} item(s)`, noMemoryMatch: 'No matching memories found',
+    skillLearnedNew: n => `New skill learned: ${n}`,
+    noStepsToExecute: 'No steps to execute', noCustomSkillsToClear: 'No custom skills to clear',
+    confirmClearSkills: n => `Clear all ${n} custom skills? This cannot be undone.`,
+    confirmClearMemory: n => `Clear all ${n} memory items? This cannot be undone.`,
+    nameDescRequired: 'Name and description are required',
+    pythonCodeRequired: 'Python code is required in code mode',
+    promptRequired: 'Prompt is required in prompt mode',
+    keyValueRequired: 'Key and value required', copyFailed: 'Copy failed',
+    skillLearnedText: (name, desc) => `New skill learned: ${name} — ${desc}`,
+    clarifyPlaceholder: 'Or describe in your own words…', clarifyConfirm: 'Confirm',
+    clarifyNote: s => `[User clarification: ${s}]`,
+    memSummaryTitle: '👤 User Preference Overview',
+    memSummarySubtitle: 'Generated by AI from current memory',
+    memSummaryGeneratedAt: t => `Generated at ${t}`,
+    memSummaryFailed: m => `Generation failed: ${m}`,
+    addSkillTitle: 'Add Custom Skill', editSkillTitle: 'Edit Skill',
+    addMemoryTitle: 'Add Memory', editMemoryTitle: 'Edit Memory',
+    forgetPlaceholder: 'Forget: "my language preference"…', forgetBtn: 'Forget',
+    skillsClear: '🗑 Clear', skillsAdd: '+ Add',
+    memoryOverview: '📄 Overview', memoryClear: '🗑 Clear', memoryAdd: '+ Add',
+    labCredit: 'USTC Cognitive Intelligence Lab · AGI Group',
+    uploading: n => `Uploading ${n}…`,
+    uploaded: (n, r, c) => `Uploaded: ${n} (${r} rows × ${c} cols)`,
+    uploadFailed: m => `Upload failed: ${m}`,
+    toolRunning: '⟳ running…', toolDone: '✓ done', toolResult: 'Result:',
+    categoryLabel: c => `Category: ${c}`, noParams: 'No parameters.',
+  },
+  zh: {
+    demoBtn: '一键体验',
+    compactBtn: '压缩', clearChatBtn: '清空对话', langBtnLabel: 'EN',
+    tabTables: '数据表', tabSkills: '技能', tabMemory: '记忆',
+    uploadedTables: '已上传数据表',
+    uploadHint: '点击或拖拽 CSV / Excel 文件至此', uploadHint2: '支持多文件同时上传',
+    noTablesYet: '暂无数据表。\n请从下方上传 CSV 或 Excel 文件。',
+    builtinSkills: '内置技能', customSkills: '自定义技能', noCustomSkills: '暂无自定义技能。',
+    catPreferences: '偏好设置', catDomainKnowledge: '领域知识',
+    catUserContext: '用户背景', catHistoryInsights: '历史洞察',
+    memoryEmpty: '空',
+    memoryEmptyState: '记忆为空。\n系统会随交互自动学习您的偏好，\n也可以手动添加。',
+    chatEmptyHint: '从侧边栏上传数据表，然后提问或对数据发出指令。',
+    chip1: '汇总所有已上传数据表', chip2: '查找空值行',
+    chip3: '按公共列合并数据表', chip4: '按首个数值列排序显示 Top 10 行',
+    demoModalTitle: '🎯 一键体验',
+    demoModalSubtitle: '选择一个场景，系统自动加载数据并逐步执行完整分析流程',
+    demoRunningLabel: '演示进行中：', demoStopBtn: '⏹ 停止演示',
+    demoStepsCount: n => `${n} 个分析步骤`, demoMoreSteps: n => `+ ${n} 更多步骤…`,
+    demoStartBtn: '开始演示', demoStepLabel: (i, t) => `步骤 ${i} / ${t}`,
+    demoLoadingData: f => `⏳ 正在加载示例数据：${f}…`,
+    demoLoadedData: n => `✓ 数据加载完成：${n}`,
+    demoLoadFailed: m => `✗ 数据加载失败：${m}`,
+    demoComplete: (title, n) => `🎉 演示完成！「${title}」共执行 ${n} 个分析步骤。`,
+    demoStopped: '⏹ 演示已停止。',
+    planModeLabel: '规划模式', planModeHint: '— 执行前可审阅步骤',
+    codeToolLabel: '代码工具', codeToolHint: '— Python 沙箱',
+    inputPlaceholder: '提问或对数据表发出操作指令…',
+    planModalDefaultSubtitle: '执行前可审阅并编辑步骤',
+    planAddStep: '+ 新增步骤', planCancel: '取消', planExecuteBtn: '执行计划',
+    tablePrev: '‹ 上一页', tableNext: '下一页 ›', tableDownload: '⬇ CSV',
+    tableLoading: '加载中…',
+    tableRowsCols: (r, c) => `${r.toLocaleString()} 行 × ${c} 列`,
+    tablePage: (p, t) => `第 ${p} 页 / 共 ${t} 页`,
+    moreRows: (e, s, t) => `… 还有 ${e} 行（显示 ${s} / ${t}）`,
+    totalRowsLink: n => `共 ${n.toLocaleString()} 行`,
+    tableRowsColsShort: (r, c) => `${r} 行 × ${c} 列`,
+    generatingPlan: '正在生成计划…',
+    failedGeneratePlan: m => `生成计划失败：${m}`,
+    selfCheckBadge: '🔍 自检', selfCheckDesc: '正在核验结果是否符合原始请求…',
+    multiAgentHeader: n => `🤖 多智能体分析 — ${n} 个专属 Agent 并行运行`,
+    agentWaiting: '等待中…', agentAnalyzing: '分析中…',
+    stepBadge: (n, t) => `步骤 ${n}/${t}`,
+    synthesizing: '正在综合各 Agent 结论并量化不确定性…',
+    viewFull: '查看完整', resultTablesTitle: '📥 结果表格',
+    resultTablesHint: '点击下载或在聊天中预览', previewBtn: '预览',
+    compactingLabel: '压缩中…',
+    chatCompactedMsg: n => `已将 ${n} 条消息压缩为摘要`,
+    historyTooShort: '对话历史太短，无需压缩', compactFailed: '压缩失败',
+    chatCompactedNotice: n => `对话已压缩 · ${n} 条消息 → 1 条摘要`,
+    chatCleared: '对话历史已清空', tableRemoved: '数据表已删除',
+    skillUpdated: '技能已更新', skillAdded: '技能已添加',
+    skillDeleted: '技能已删除', skillsCleared: '所有自定义技能已清空',
+    memorySaved: '记忆已保存', memoryItemDeleted: '记忆条目已删除',
+    memoryCleared: '所有记忆已清空', memoryCopied: '已复制到剪贴板',
+    memoryForgot: n => `已遗忘 ${n} 条记忆`, noMemoryMatch: '未找到匹配的记忆',
+    skillLearnedNew: n => `已学习新技能：${n}`,
+    noStepsToExecute: '没有可执行的步骤', noCustomSkillsToClear: '暂无自定义技能',
+    confirmClearSkills: n => `清空全部 ${n} 个自定义技能？此操作不可撤销。`,
+    confirmClearMemory: n => `清空全部 ${n} 条记忆？此操作不可撤销。`,
+    nameDescRequired: '名称和描述不能为空',
+    pythonCodeRequired: '代码模式下 Python 代码不能为空',
+    promptRequired: '提示词模式下提示词不能为空',
+    keyValueRequired: '键和值不能为空', copyFailed: '复制失败',
+    skillLearnedText: (name, desc) => `从本次推理中抽象出新 Skill：${name} — ${desc}`,
+    clarifyPlaceholder: '或自定义说明…', clarifyConfirm: '确认',
+    clarifyNote: s => `[用户补充说明: ${s}]`,
+    memSummaryTitle: '👤 用户偏好概览',
+    memSummarySubtitle: '由 AI 根据当前记忆整理生成',
+    memSummaryGeneratedAt: t => `生成于 ${t}`,
+    memSummaryFailed: m => `生成失败: ${m}`,
+    addSkillTitle: '添加自定义技能', editSkillTitle: '编辑技能',
+    addMemoryTitle: '添加记忆', editMemoryTitle: '编辑记忆',
+    forgetPlaceholder: '遗忘："我的语言偏好"…', forgetBtn: '遗忘',
+    skillsClear: '🗑 清空', skillsAdd: '+ 新增',
+    memoryOverview: '📄 概览', memoryClear: '🗑 清空', memoryAdd: '+ 新增',
+    labCredit: '中国科学技术大学认知智能全国重点实验室 AGI 组',
+    uploading: n => `正在上传 ${n}…`,
+    uploaded: (n, r, c) => `已上传：${n}（${r} 行 × ${c} 列）`,
+    uploadFailed: m => `上传失败：${m}`,
+    toolRunning: '⟳ 运行中…', toolDone: '✓ 完成', toolResult: '结果：',
+    categoryLabel: c => `分类：${c}`, noParams: '无参数。',
+  },
+};
   constructor() {
     this.state = {
       tables: [],
@@ -97,12 +267,14 @@ class TabClawApp {
   _init() {
     // Configure marked (GitHub-flavoured MD, single-newline → <br>)
     marked.use({ gfm: true, breaks: true });
+    this._lang = localStorage.getItem('lang') || 'en';
     this._applyTheme(localStorage.getItem('theme') || 'dark');
     this._bindEvents();
     this._loadTables();
     this._loadSkills();
     this._loadMemory();
     this._autoresize(document.getElementById('message-input'));
+    this._applyLang();
   }
 
   _bindEvents() {
@@ -145,6 +317,8 @@ class TabClawApp {
 
     // Theme toggle
     document.getElementById('theme-btn').addEventListener('click', () => this._toggleTheme());
+    // Lang toggle
+    document.getElementById('lang-btn').addEventListener('click', () => this._toggleLang());
 
     // Clear / Compact chat
     document.getElementById('clear-chat-btn').addEventListener('click', () => this._clearChat());
@@ -241,6 +415,150 @@ class TabClawApp {
   }
 
   // -----------------------------------------------------------------------
+  // i18n
+  // -----------------------------------------------------------------------
+
+  _t(key, ...args) {
+    const s = STRINGS[this._lang] || STRINGS.en;
+    const val = s[key] !== undefined ? s[key] : (STRINGS.en[key] || key);
+    return typeof val === 'function' ? val(...args) : val;
+  }
+
+  _toggleLang() {
+    this._lang = this._lang === 'en' ? 'zh' : 'en';
+    localStorage.setItem('lang', this._lang);
+    this._applyLang();
+  }
+
+  _applyLang() {
+    // Header buttons
+    const demoLabel = document.querySelector('#demo-btn .btn-label');
+    if (demoLabel) demoLabel.textContent = this._t('demoBtn');
+    const compactLabel = document.querySelector('#compact-chat-btn .btn-label');
+    if (compactLabel) compactLabel.textContent = this._t('compactBtn');
+    const clearLabel = document.querySelector('#clear-chat-btn .btn-label');
+    if (clearLabel) clearLabel.textContent = this._t('clearChatBtn');
+    const langBtn = document.getElementById('lang-btn');
+    if (langBtn) langBtn.textContent = this._t('langBtnLabel');
+
+    // Sidebar tabs
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+      if (tab.dataset.tab === 'tables') tab.textContent = this._t('tabTables');
+      else if (tab.dataset.tab === 'skills') tab.textContent = this._t('tabSkills');
+      else if (tab.dataset.tab === 'memory') tab.textContent = this._t('tabMemory');
+    });
+
+    // Tables panel header
+    const tablesHeader = document.querySelector('#panel-tables .sidebar-panel-header > span:first-child');
+    if (tablesHeader) tablesHeader.textContent = this._t('uploadedTables');
+
+    // Upload area text
+    const uploadMain = document.getElementById('upload-hint-main');
+    if (uploadMain) uploadMain.textContent = this._t('uploadHint');
+    const uploadSub = document.getElementById('upload-hint-sub');
+    if (uploadSub) uploadSub.textContent = this._t('uploadHint2');
+
+    // Skills panel header
+    const skillsHeader = document.querySelector('#panel-skills .sidebar-panel-header > span:first-child');
+    if (skillsHeader) skillsHeader.textContent = this._t('tabSkills');
+    const clearSkillsBtn = document.getElementById('clear-skills-btn');
+    if (clearSkillsBtn) clearSkillsBtn.textContent = this._t('skillsClear');
+    const addSkillBtn = document.getElementById('add-skill-btn');
+    if (addSkillBtn) addSkillBtn.textContent = this._t('skillsAdd');
+
+    // Memory panel header
+    const memHeader = document.querySelector('#panel-memory .sidebar-panel-header > span:first-child');
+    if (memHeader) memHeader.textContent = this._t('tabMemory');
+    const overviewBtn = document.getElementById('memory-overview-btn');
+    if (overviewBtn) overviewBtn.textContent = this._t('memoryOverview');
+    const clearMemBtn = document.getElementById('clear-memory-btn');
+    if (clearMemBtn) clearMemBtn.textContent = this._t('memoryClear');
+    const addMemBtn = document.getElementById('add-memory-btn');
+    if (addMemBtn) addMemBtn.textContent = this._t('memoryAdd');
+
+    // Forget bar
+    const forgetInput = document.getElementById('forget-input');
+    if (forgetInput) forgetInput.placeholder = this._t('forgetPlaceholder');
+    const forgetBtn = document.getElementById('forget-btn');
+    if (forgetBtn) forgetBtn.textContent = this._t('forgetBtn');
+
+    // Demo control bar
+    const demoRunSpan = document.querySelector('#demo-control .demo-control-inner > span:nth-child(2)');
+    if (demoRunSpan) demoRunSpan.textContent = this._t('demoRunningLabel');
+    const demoStopBtn = document.getElementById('demo-stop-btn');
+    if (demoStopBtn) demoStopBtn.textContent = this._t('demoStopBtn');
+
+    // Toolbar labels
+    const planLabelText = document.getElementById('plan-mode-label-text');
+    if (planLabelText) planLabelText.textContent = this._t('planModeLabel');
+    const planHintSpan = document.getElementById('plan-mode-hint-span');
+    if (planHintSpan) planHintSpan.textContent = this._t('planModeHint');
+    const codeToolText = document.getElementById('code-tool-label-text');
+    if (codeToolText) codeToolText.textContent = this._t('codeToolLabel');
+    const codeToolHint = document.getElementById('code-tool-hint-span');
+    if (codeToolHint) codeToolHint.textContent = this._t('codeToolHint');
+
+    // Message input placeholder
+    const msgInput = document.getElementById('message-input');
+    if (msgInput) msgInput.placeholder = this._t('inputPlaceholder');
+
+    // Plan modal
+    const addPlanStepBtn = document.getElementById('add-plan-step-btn');
+    if (addPlanStepBtn) addPlanStepBtn.textContent = this._t('planAddStep');
+    const planCancelBtn = document.getElementById('plan-cancel-btn');
+    if (planCancelBtn) planCancelBtn.textContent = this._t('planCancel');
+    const executeLabel = document.querySelector('#execute-plan-btn .btn-label');
+    if (executeLabel) executeLabel.textContent = this._t('planExecuteBtn');
+
+    // Table modal
+    const tablePrev = document.getElementById('table-modal-prev');
+    if (tablePrev) tablePrev.textContent = this._t('tablePrev');
+    const tableNext = document.getElementById('table-modal-next');
+    if (tableNext) tableNext.textContent = this._t('tableNext');
+    const tableDownload = document.getElementById('table-modal-download');
+    if (tableDownload) tableDownload.textContent = this._t('tableDownload');
+
+    // Demo modal
+    const demoTitle = document.querySelector('#demo-modal .modal-title');
+    if (demoTitle) demoTitle.textContent = this._t('demoModalTitle');
+    const demoSubtitle = document.querySelector('#demo-modal .modal-subtitle');
+    if (demoSubtitle) demoSubtitle.textContent = this._t('demoModalSubtitle');
+
+    // Memory summary modal
+    const memSumTitle = document.querySelector('#memory-summary-modal .modal-title');
+    if (memSumTitle) memSumTitle.textContent = this._t('memSummaryTitle');
+    const memSumSubtitle = document.getElementById('memory-summary-subtitle');
+    if (memSumSubtitle) memSumSubtitle.textContent = this._t('memSummarySubtitle');
+
+    // Lab credit
+    const labCredit = document.getElementById('lab-credit');
+    if (labCredit) labCredit.textContent = this._t('labCredit');
+
+    // Re-render dynamic sections
+    this._renderTables();
+    this._renderSkills();
+    this._renderMemory();
+    if (document.getElementById('chat-empty')) this._rebuildChatEmpty();
+    if (!document.getElementById('demo-modal').classList.contains('hidden')) {
+      this._renderDemoScenarios();
+    }
+  }
+
+  _rebuildChatEmpty() {
+    const el = document.getElementById('chat-empty');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="brand-logo-wrap"><img src="/asset/logo_rmbg.png" alt="TabClaw" class="brand-logo" /></div>
+      <p>${this._t('chatEmptyHint')}</p>
+      <div class="suggestion-chips">
+        <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip1')}</div>
+        <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip2')}</div>
+        <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip3')}</div>
+        <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip4')}</div>
+      </div>`;
+  }
+
+  // -----------------------------------------------------------------------
   // API helpers
   // -----------------------------------------------------------------------
 
@@ -268,7 +586,7 @@ class TabClawApp {
 
   async _uploadFile(file) {
     const name = file.name;
-    this._notify(`Uploading ${name}…`, 'info');
+    this._notify(this._t('uploading', name), 'info');
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -277,9 +595,9 @@ class TabClawApp {
       const data = await res.json();
       this.state.tables = await this._api('GET', '/api/tables');
       this._renderTables();
-      this._notify(`Uploaded: ${data.name} (${data.rows} rows × ${data.cols} cols)`, 'success');
+      this._notify(this._t('uploaded', data.name, data.rows, data.cols), 'success');
       this._hideChatEmpty();
-    } catch (e) { this._notify(`Upload failed: ${e.message}`, 'error'); }
+    } catch (e) { this._notify(this._t('uploadFailed', e.message), 'error'); }
   }
 
   async _deleteTable(tableId) {
@@ -287,7 +605,7 @@ class TabClawApp {
       await this._api('DELETE', `/api/tables/${tableId}`);
       this.state.tables = this.state.tables.filter(t => t.table_id !== tableId);
       this._renderTables();
-      this._notify('Table removed', 'success');
+      this._notify(this._t('tableRemoved'), 'success');
     } catch (e) { this._notify(`Error: ${e.message}`, 'error'); }
   }
 
@@ -296,7 +614,7 @@ class TabClawApp {
     const count = document.getElementById('table-count');
     count.textContent = this.state.tables.length;
     if (!this.state.tables.length) {
-      list.innerHTML = '<div class="empty-state">No tables yet.<br>Upload CSV or Excel files below.</div>';
+      list.innerHTML = `<div class="empty-state">${this._t('noTablesYet').replace('\n', '<br>')}</div>`;
       return;
     }
     list.innerHTML = this.state.tables.map(t => `
@@ -304,7 +622,7 @@ class TabClawApp {
         <span class="table-item-icon">📊</span>
         <div class="table-item-info" onclick="app.showTableModal('${t.table_id}')">
           <div class="table-item-name">${this._esc(t.name)}</div>
-          <div class="table-item-meta">${t.rows.toLocaleString()} rows × ${t.cols} cols</div>
+          <div class="table-item-meta">${this._t('tableRowsColsShort', t.rows, t.cols)}</div>
         </div>
         <span class="table-item-badge ${t.source === 'computed' ? 'purple' : ''}">${t.source === 'computed' ? 'result' : 'csv'}</span>
         <div class="table-item-actions">
@@ -332,16 +650,16 @@ class TabClawApp {
 
   async _loadTablePage(tableId, page) {
     const content = document.getElementById('table-modal-content');
-    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div>';
+    content.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted)">${this._t('tableLoading')}</div>`;
     try {
       const data = await this._api('GET', `/api/tables/${tableId}?page=${page}&page_size=50`);
       this.state.tableModal.totalPages = data.total_pages;
       this.state.tableModal.page = data.page;
       document.getElementById('table-modal-title').textContent = data.name;
       document.getElementById('table-modal-meta').textContent =
-        `${data.total_rows.toLocaleString()} rows × ${data.columns.length} columns`;
+        this._t('tableRowsCols', data.total_rows, data.columns.length);
       document.getElementById('table-modal-page').textContent =
-        `Page ${data.page} / ${data.total_pages}`;
+        this._t('tablePage', data.page, data.total_pages);
       document.getElementById('table-modal-prev').disabled = data.page <= 1;
       document.getElementById('table-modal-next').disabled = data.page >= data.total_pages;
       content.innerHTML = this._buildDataTable(data.columns, data.rows, data.total_rows);
@@ -365,9 +683,9 @@ class TabClawApp {
       `<tr>${columns.map(c => `<td title="${this._esc(String(row[c] ?? ''))}">${this._esc(String(row[c] ?? ''))}</td>`).join('')}</tr>`
     ).join('');
     let html = `<div class="table-scroll"><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
-    if (extra > 0) html += `<div class="table-more-rows">… ${extra} more rows (showing ${shown.length} of ${rows.length})</div>`;
+    if (extra > 0) html += `<div class="table-more-rows">${this._t('moreRows', extra, shown.length, rows.length)}</div>`;
     if (maxInline > 0 && totalRows > maxInline) {
-      html += `<div class="table-more-rows">${totalRows.toLocaleString()} total rows — <a style="color:var(--primary);cursor:pointer" onclick="app.showTableModal('_tid_')">View full table</a></div>`;
+      html += `<div class="table-more-rows">${this._t('totalRowsLink', totalRows)} — <a style="color:var(--primary);cursor:pointer" onclick="app.showTableModal('_tid_')">${this._t('viewFull')}</a></div>`;
     }
     return html;
   }
@@ -414,7 +732,7 @@ class TabClawApp {
   }
 
   async _generateAndShowPlan(msg) {
-    const thinkId = this._appendThinking('Generating plan…');
+    const thinkId = this._appendThinking(this._t('generatingPlan'));
     try {
       const plan = await this._api('POST', '/api/generate-plan', { message: msg });
       this._removeMessage(thinkId);
@@ -423,7 +741,7 @@ class TabClawApp {
       this._showPlanModal(plan);
     } catch (e) {
       this._removeMessage(thinkId);
-      this._appendErrorMessage(`Failed to generate plan: ${e.message}`);
+      this._appendErrorMessage(this._t('failedGeneratePlan', e.message));
     }
   }
 
@@ -735,7 +1053,7 @@ class TabClawApp {
 
     const header = document.createElement('div');
     header.className = 'rdp-header';
-    header.innerHTML = `<span class="rdp-title">📥 结果表格</span><span class="rdp-hint">点击下载或在聊天中预览</span>`;
+    header.innerHTML = `<span class="rdp-title">${this._t('resultTablesTitle')}</span><span class="rdp-hint">${this._t('resultTablesHint')}</span>`;
     panel.appendChild(header);
 
     const list = document.createElement('div');
@@ -747,10 +1065,10 @@ class TabClawApp {
       const cols = (t.columns || []).length;
       item.innerHTML = `
         <span class="rdp-table-name">📊 ${this._esc(t.name)}</span>
-        <span class="rdp-table-meta">${rows} 行 × ${cols} 列</span>
+        <span class="rdp-table-meta">${this._t('tableRowsColsShort', rows, cols)}</span>
         <div class="rdp-actions">
-          <button class="btn sm" onclick="app.showTableModal('${t.table_id}')">预览</button>
-          <button class="btn sm primary" onclick="window.location.href='/api/tables/${t.table_id}/download'">⬇ CSV</button>
+          <button class="btn sm" onclick="app.showTableModal('${t.table_id}')">${this._t('previewBtn')}</button>
+          <button class="btn sm primary" onclick="window.location.href='/api/tables/${t.table_id}/download'">${this._t('tableDownload')}</button>
         </div>`;
       list.appendChild(item);
     });
@@ -785,7 +1103,7 @@ class TabClawApp {
       <div class="tool-block-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
         ${icon}
         <span class="tool-name">${this._esc(skillName)}</span>
-        <span class="tool-status" id="${blockId}-status">⟳ running…</span>
+        <span class="tool-status" id="${blockId}-status">${this._t('toolRunning')}</span>
       </div>
       <div class="tool-block-body" style="display:none">
         <div class="tool-block-label">Code:</div>
@@ -804,13 +1122,13 @@ class TabClawApp {
     if (!last) return;
     const statusEl = last.querySelector('[id$="-status"]');
     if (statusEl) {
-      statusEl.textContent = '✓ done';
+      statusEl.textContent = this._t('toolDone');
       statusEl.className = 'tool-status ok';
     }
     const resultEl = last.querySelector('[id$="-result"]');
     if (resultEl && resultText) {
       const preview = resultText.length > 200 ? resultText.slice(0, 200) + '…' : resultText;
-      resultEl.innerHTML = `<div style="color:var(--text-dim);margin-top:6px">Result:</div>${this._esc(preview)}`;
+      resultEl.innerHTML = `<div style="color:var(--text-dim);margin-top:6px">${this._t('toolResult')}</div>${this._esc(preview)}`;
     }
   }
 
@@ -825,10 +1143,10 @@ class TabClawApp {
     div.innerHTML = `
       <div class="table-result-header">
         <span class="table-result-name">📊 ${this._esc(tableData.name)}</span>
-        <span class="table-result-meta">${totalRows.toLocaleString()} rows × ${tableData.columns.length} cols</span>
+        <span class="table-result-meta">${this._t('tableRowsColsShort', totalRows.toLocaleString(), tableData.columns.length)}</span>
         <div class="table-result-actions">
-          <button class="btn sm" onclick="app.showTableModal('${tableData.table_id}')">View Full</button>
-          <button class="btn sm" onclick="window.location.href='/api/tables/${tableData.table_id}/download'">⬇ CSV</button>
+          <button class="btn sm" onclick="app.showTableModal('${tableData.table_id}')">${this._t('viewFull')}</button>
+          <button class="btn sm" onclick="window.location.href='/api/tables/${tableData.table_id}/download'">${this._t('tableDownload')}</button>
         </div>
       </div>
       ${tableHtml}`;
@@ -844,7 +1162,7 @@ class TabClawApp {
     const div = document.createElement('div');
     div.className = `step-progress ${done ? 'step-done' : ''}`;
     div.id = id;
-    div.innerHTML = `<span class="step-badge">Step ${stepNum}/${total}</span><span class="step-desc">${this._esc(desc)}</span>`;
+    div.innerHTML = `<span class="step-badge">${this._t('stepBadge', stepNum, total)}</span><span class="step-desc">${this._esc(desc)}</span>`;
     body.appendChild(div);
     this._scrollChat();
   }
@@ -862,7 +1180,7 @@ class TabClawApp {
     const div = document.createElement('div');
     div.className = 'step-progress reflect-indicator';
     div.id = id;
-    div.innerHTML = `<span class="step-badge reflect-badge">🔍 Self-check</span><span class="step-desc">Verifying results against original request…</span>`;
+    div.innerHTML = `<span class="step-badge reflect-badge">${this._t('selfCheckBadge')}</span><span class="step-desc">${this._t('selfCheckDesc')}</span>`;
     body.appendChild(div);
     this._scrollChat();
   }
@@ -884,7 +1202,7 @@ class TabClawApp {
 
     const header = document.createElement('div');
     header.className = 'agent-pool-header';
-    header.innerHTML = `🤖 Multi-Agent Analysis &mdash; ${agents.length} specialist agents running in parallel`;
+    header.innerHTML = this._t('multiAgentHeader', agents.length);
     pool.appendChild(header);
 
     const grid = document.createElement('div');
@@ -902,7 +1220,7 @@ class TabClawApp {
           <span>${this._esc(agent.table_name)}</span>
         </div>
         <div class="agent-card-tools" id="agent-tools-${msgId}-${agent.id}"></div>
-        <div class="agent-card-text" id="agent-text-${msgId}-${agent.id}">Waiting…</div>`;
+        <div class="agent-card-text" id="agent-text-${msgId}-${agent.id}">${this._t('agentWaiting')}</div>`;
       grid.appendChild(card);
       this._agentState[agent.id] = { textBuffer: '' };
     }
@@ -915,7 +1233,7 @@ class TabClawApp {
     const card = document.getElementById(`agent-card-${msgId}-${agentId}`);
     if (card) { card.classList.remove('pending'); card.classList.add('running'); }
     const textEl = document.getElementById(`agent-text-${msgId}-${agentId}`);
-    if (textEl) textEl.textContent = 'Analyzing…';
+    if (textEl) textEl.textContent = this._t('agentAnalyzing');
   }
 
   _addAgentToolBadge(msgId, agentId, skillName) {
@@ -955,7 +1273,7 @@ class TabClawApp {
     const div = document.createElement('div');
     div.className = 'aggregate-header';
     div.id = `aggregate-header-${msgId}`;
-    div.innerHTML = `<span class="aggregate-spinner"></span> Synthesising findings &amp; quantifying uncertainty…`;
+    div.innerHTML = `<span class="aggregate-spinner"></span> ${this._t('synthesizing')}`;
     body.appendChild(div);
     this._scrollChat();
   }
@@ -988,26 +1306,27 @@ class TabClawApp {
 
   async _compactChat() {
     const btn = document.getElementById('compact-chat-btn');
+    const svgHtml = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+        <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>`;
     btn.disabled = true;
-    btn.textContent = 'Compacting…';
+    btn.innerHTML = svgHtml + ' ' + this._t('compactingLabel');
     try {
       const data = await this._api('POST', '/api/chat/compact');
       if (data.status === 'compacted') {
         this._appendCompactedNotice(data.old_count, data.summary);
-        this._notify(`Compacted ${data.old_count} messages into a summary`, 'success');
+        this._notify(this._t('chatCompactedMsg', data.old_count), 'success');
       } else if (data.status === 'skipped') {
-        this._notify('History is too short to compact', 'info');
+        this._notify(this._t('historyTooShort'), 'info');
       } else {
-        this._notify('Compaction failed', 'error');
+        this._notify(this._t('compactFailed'), 'error');
       }
     } catch (e) {
       this._notify(e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
-        <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
-      </svg> Compact`;
+      btn.innerHTML = `${svgHtml} <span class="btn-label">${this._t('compactBtn')}</span>`;
     }
   }
 
@@ -1020,7 +1339,7 @@ class TabClawApp {
           <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
           <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
         </svg>
-        <span>Chat compacted · ${oldCount} messages → 1 summary</span>
+        <span>${this._t('chatCompactedNotice', oldCount)}</span>
       </div>
       ${summary ? `<div class="compact-notice-summary">${this._esc(summary)}</div>` : ''}`;
     this._chatContainer().appendChild(el);
@@ -1033,15 +1352,15 @@ class TabClawApp {
       this._chatContainer().innerHTML = `
         <div id="chat-empty">
           <div class="brand-logo-wrap"><img src="/asset/logo_rmbg.png" class="brand-logo" /></div>
-          <p>Upload tables from the sidebar, then ask questions or request operations on your data.</p>
+          <p>${this._t('chatEmptyHint')}</p>
           <div class="suggestion-chips">
-            <div class="chip" onclick="app.insertSuggestion(this)">Summarize all uploaded tables</div>
-            <div class="chip" onclick="app.insertSuggestion(this)">Find rows where value is null</div>
-            <div class="chip" onclick="app.insertSuggestion(this)">Merge tables on a common column</div>
-            <div class="chip" onclick="app.insertSuggestion(this)">Show top 10 rows sorted by first numeric column</div>
+            <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip1')}</div>
+            <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip2')}</div>
+            <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip3')}</div>
+            <div class="chip" onclick="app.insertSuggestion(this)">${this._t('chip4')}</div>
           </div>
         </div>`;
-      this._notify('Chat history cleared', 'success');
+      this._notify(this._t('chatCleared'), 'success');
     } catch (e) { this._notify(e.message, 'error'); }
   }
 
@@ -1051,7 +1370,7 @@ class TabClawApp {
 
   _showPlanModal(plan) {
     const container = document.getElementById('plan-steps-container');
-    document.getElementById('plan-modal-subtitle').textContent = plan.title || 'Review and edit steps before execution';
+    document.getElementById('plan-modal-subtitle').textContent = plan.title || this._t('planModalDefaultSubtitle');
     container.innerHTML = '';
     (plan.steps || []).forEach(step => this._renderPlanStep(step, container));
     document.getElementById('plan-modal').classList.remove('hidden');
@@ -1119,7 +1438,7 @@ class TabClawApp {
       description: el.querySelector('textarea').value.trim(),
     })).filter(s => s.description);
 
-    if (!steps.length) { this._notify('No steps to execute', 'error'); return; }
+    if (!steps.length) { this._notify(this._t('noStepsToExecute'), 'error'); return; }
 
     this.hidePlanModal();
     await this._streamChat(this.state.currentPlanMessage, true, steps);
@@ -1139,7 +1458,7 @@ class TabClawApp {
   _renderSkills() {
     const list = document.getElementById('skills-list');
     const { builtin, custom } = this.state.skills;
-    let html = '<div class="skill-section-title">Built-in Skills</div>';
+    let html = `<div class="skill-section-title">${this._t('builtinSkills')}</div>`;
     html += (builtin || []).map(s => `
       <div class="skill-item skill-item-clickable" onclick="app.showBuiltinSkillDetail('${this._esc(s.name)}')">
         <span class="skill-dot builtin"></span>
@@ -1150,9 +1469,9 @@ class TabClawApp {
         </div>
         <button class="btn icon-only sm skill-info-btn" title="View details" onclick="event.stopPropagation();app.showBuiltinSkillDetail('${this._esc(s.name)}')">ℹ</button>
       </div>`).join('');
-    html += '<hr class="divider"><div class="skill-section-title">Custom Skills</div>';
+    html += `<hr class="divider"><div class="skill-section-title">${this._t('customSkills')}</div>`;
     if (!custom || !custom.length) {
-      html += '<div class="empty-state">No custom skills yet.</div>';
+      html += `<div class="empty-state">${this._t('noCustomSkills')}</div>`;
     } else {
       html += custom.map(s => `
         <div class="skill-item">
@@ -1172,7 +1491,7 @@ class TabClawApp {
 
   showSkillModal(skillId) {
     this.state.skillEdit = skillId || null;
-    document.getElementById('skill-modal-title').textContent = skillId ? 'Edit Skill' : 'Add Custom Skill';
+    document.getElementById('skill-modal-title').textContent = skillId ? this._t('editSkillTitle') : this._t('addSkillTitle');
     if (skillId) {
       const skill = (this.state.skills.custom || []).find(s => s.id === skillId);
       if (skill) {
@@ -1211,7 +1530,7 @@ class TabClawApp {
 
     document.getElementById('skill-detail-name').textContent = skill.name;
     document.getElementById('skill-detail-category').textContent =
-      `Category: ${skill.category || 'general'}`;
+      this._t('categoryLabel', skill.category || 'general');
 
     // Build the detail body
     const params = skill.parameters || {};
@@ -1234,7 +1553,7 @@ class TabClawApp {
           </tbody>
         </table>`;
     } else {
-      paramsHtml = '<p style="color:var(--text-dim);font-size:12px">No parameters.</p>';
+      paramsHtml = `<p style="color:var(--text-dim);font-size:12px">${this._t('noParams')}</p>`;
     }
 
     document.getElementById('skill-detail-body').innerHTML = `
@@ -1265,17 +1584,17 @@ class TabClawApp {
     const codeMode = !document.getElementById('skill-panel-code').classList.contains('hidden');
     const prompt = document.getElementById('skill-prompt-input').value.trim();
     const code = document.getElementById('skill-code-input').value.trim();
-    if (!name || !description) { this._notify('Name and description are required', 'error'); return; }
-    if (codeMode && !code) { this._notify('Python code is required in code mode', 'error'); return; }
-    if (!codeMode && !prompt) { this._notify('Prompt is required in prompt mode', 'error'); return; }
+    if (!name || !description) { this._notify(this._t('nameDescRequired'), 'error'); return; }
+    if (codeMode && !code) { this._notify(this._t('pythonCodeRequired'), 'error'); return; }
+    if (!codeMode && !prompt) { this._notify(this._t('promptRequired'), 'error'); return; }
     try {
       const body = { name, description, prompt: codeMode ? '' : prompt, code: codeMode ? code : null };
       if (this.state.skillEdit) {
         await this._api('PUT', `/api/skills/${this.state.skillEdit}`, body);
-        this._notify('Skill updated', 'success');
+        this._notify(this._t('skillUpdated'), 'success');
       } else {
         await this._api('POST', '/api/skills', body);
-        this._notify('Skill added', 'success');
+        this._notify(this._t('skillAdded'), 'success');
       }
       this.hideSkillModal();
       await this._loadSkills();
@@ -1285,18 +1604,18 @@ class TabClawApp {
   async _deleteSkill(skillId) {
     try {
       await this._api('DELETE', `/api/skills/${skillId}`);
-      this._notify('Skill deleted', 'success');
+      this._notify(this._t('skillDeleted'), 'success');
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
   }
 
   async _clearAllSkills() {
     const custom = this.state.skills.custom || [];
-    if (!custom.length) { this._notify('No custom skills to clear', 'info'); return; }
-    if (!confirm(`清空全部 ${custom.length} 个自定义 Skill？此操作不可撤销。`)) return;
+    if (!custom.length) { this._notify(this._t('noCustomSkillsToClear'), 'info'); return; }
+    if (!confirm(this._t('confirmClearSkills', custom.length))) return;
     try {
       await this._api('DELETE', '/api/skills');
-      this._notify('All custom skills cleared', 'success');
+      this._notify(this._t('skillsCleared'), 'success');
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
   }
@@ -1316,10 +1635,10 @@ class TabClawApp {
     const list = document.getElementById('memory-list');
     const mem = this.state.memory;
     const catLabels = {
-      preferences: 'Preferences',
-      domain_knowledge: 'Domain Knowledge',
-      user_context: 'User Context',
-      history_insights: 'History Insights',
+      preferences: this._t('catPreferences'),
+      domain_knowledge: this._t('catDomainKnowledge'),
+      user_context: this._t('catUserContext'),
+      history_insights: this._t('catHistoryInsights'),
     };
     let html = '';
     let total = 0;
@@ -1334,7 +1653,7 @@ class TabClawApp {
             <span class="count">${keys.length}</span>
           </div>`;
       if (!keys.length) {
-        html += '<div class="memory-empty">Empty</div>';
+        html += `<div class="memory-empty">${this._t('memoryEmpty')}</div>`;
       } else {
         html += keys.map(key => {
           const entry = items[key];
@@ -1359,7 +1678,7 @@ class TabClawApp {
       html += '</div>';
     }
     if (total === 0) {
-      html += '<div class="empty-state">Memory is empty.<br>The system learns your preferences over time,<br>or you can add items manually.</div>';
+      html += `<div class="empty-state">${this._t('memoryEmptyState').replace(/\n/g, '<br>')}</div>`;
     }
     list.innerHTML = html;
   }
@@ -1367,7 +1686,7 @@ class TabClawApp {
   showMemoryModal(category, key) {
     if (category && key) {
       this.state.memoryEdit = { category, key };
-      document.getElementById('memory-modal-title').textContent = 'Edit Memory';
+      document.getElementById('memory-modal-title').textContent = this._t('editMemoryTitle');
       const entry = (this.state.memory[category] || {})[key];
       const val = typeof entry === 'object' ? entry.value : (entry || '');
       document.getElementById('mem-cat-input').value = category;
@@ -1375,7 +1694,7 @@ class TabClawApp {
       document.getElementById('mem-val-input').value = val;
     } else {
       this.state.memoryEdit = null;
-      document.getElementById('memory-modal-title').textContent = 'Add Memory';
+      document.getElementById('memory-modal-title').textContent = this._t('addMemoryTitle');
       document.getElementById('mem-cat-input').value = 'preferences';
       document.getElementById('mem-key-input').value = '';
       document.getElementById('mem-val-input').value = '';
@@ -1391,14 +1710,13 @@ class TabClawApp {
     const category = document.getElementById('mem-cat-input').value;
     const key = document.getElementById('mem-key-input').value.trim();
     const value = document.getElementById('mem-val-input').value.trim();
-    if (!key || !value) { this._notify('Key and value required', 'error'); return; }
+    if (!key || !value) { this._notify(this._t('keyValueRequired'), 'error'); return; }
     try {
-      // If editing and key changed, delete old entry first
       if (this.state.memoryEdit && this.state.memoryEdit.key !== key) {
         await this._api('DELETE', `/api/memory/${this.state.memoryEdit.category}/${encodeURIComponent(this.state.memoryEdit.key)}`);
       }
       await this._api('POST', '/api/memory', { category, key, value });
-      this._notify('Memory saved', 'success');
+      this._notify(this._t('memorySaved'), 'success');
       this.hideMemoryModal();
       await this._loadMemory();
     } catch (e) { this._notify(e.message, 'error'); }
@@ -1407,7 +1725,7 @@ class TabClawApp {
   async _deleteMemory(category, key) {
     try {
       await this._api('DELETE', `/api/memory/${category}/${encodeURIComponent(key)}`);
-      this._notify('Memory item deleted', 'success');
+      this._notify(this._t('memoryItemDeleted'), 'success');
       await this._loadMemory();
     } catch (e) { this._notify(e.message, 'error'); }
   }
@@ -1415,11 +1733,11 @@ class TabClawApp {
   async _clearAllMemory() {
     const mem = this.state.memory || {};
     const total = Object.values(mem).reduce((n, cat) => n + Object.keys(cat).length, 0);
-    if (!total) { this._notify('Memory is already empty', 'info'); return; }
-    if (!confirm(`清空全部 ${total} 条 Memory？此操作不可撤销。`)) return;
+    if (!total) { this._notify(this._t('memoryCleared'), 'info'); return; }
+    if (!confirm(this._t('confirmClearMemory', total))) return;
     try {
       await this._api('DELETE', '/api/memory');
-      this._notify('All memory cleared', 'success');
+      this._notify(this._t('memoryCleared'), 'success');
       await this._loadMemory();
     } catch (e) { this._notify(e.message, 'error'); }
   }
@@ -1431,10 +1749,10 @@ class TabClawApp {
     try {
       const result = await this._api('POST', '/api/memory/forget', { query });
       if (result.count > 0) {
-        this._notify(`Forgot ${result.count} item(s)`, 'success');
+        this._notify(this._t('memoryForgot', result.count), 'success');
         await this._loadMemory();
       } else {
-        this._notify('No matching memories found', 'info');
+        this._notify(this._t('noMemoryMatch'), 'info');
       }
       input.value = '';
     } catch (e) { this._notify(e.message, 'error'); }
@@ -1451,7 +1769,7 @@ class TabClawApp {
     // Open modal and show loading state
     content.innerHTML = '';
     loading.classList.remove('hidden');
-    subtitle.textContent = '由 AI 根据当前记忆整理生成';
+    subtitle.textContent = this._t('memSummarySubtitle');
     modal.classList.remove('hidden');
 
     const doGenerate = async () => {
@@ -1462,9 +1780,9 @@ class TabClawApp {
         this._summaryText = result.summary || '';
         content.innerHTML = this._renderMarkdown(this._summaryText);
         const now = new Date().toLocaleTimeString();
-        subtitle.textContent = `生成于 ${now}`;
+        subtitle.textContent = this._t('memSummaryGeneratedAt', now);
       } catch (e) {
-        content.innerHTML = `<span style="color:var(--red)">生成失败: ${this._esc(e.message)}</span>`;
+        content.innerHTML = `<span style="color:var(--red)">${this._t('memSummaryFailed', this._esc(e.message))}</span>`;
       } finally {
         loading.classList.add('hidden');
       }
@@ -1474,8 +1792,8 @@ class TabClawApp {
     copyBtn.onclick = () => {
       if (!this._summaryText) return;
       navigator.clipboard.writeText(this._summaryText)
-        .then(() => this._notify('Copied to clipboard', 'success'))
-        .catch(() => this._notify('Copy failed', 'error'));
+        .then(() => this._notify(this._t('memoryCopied'), 'success'))
+        .catch(() => this._notify(this._t('copyFailed'), 'error'));
     };
 
     // Regenerate button
@@ -1542,7 +1860,7 @@ class TabClawApp {
           <span class="demo-card-icon">${s.icon}</span>
           <div>
             <div class="demo-card-title">${this._esc(s.title)}</div>
-            <div class="demo-card-steps-count">${s.queries.length} 个分析步骤</div>
+            <div class="demo-card-steps-count">${this._t('demoStepsCount', s.queries.length)}</div>
           </div>
         </div>
         <div class="demo-card-desc">${this._esc(s.description)}</div>
@@ -1551,14 +1869,14 @@ class TabClawApp {
         </div>
         <ul class="demo-card-steps-list">
           ${s.queries.slice(0, 2).map(q => `<li>${this._esc(q.slice(0, 58))}${q.length > 58 ? '…' : ''}</li>`).join('')}
-          ${s.queries.length > 2 ? `<li class="more-steps">+ ${s.queries.length - 2} 更多步骤…</li>` : ''}
+          ${s.queries.length > 2 ? `<li class="more-steps">${this._t('demoMoreSteps', s.queries.length - 2)}</li>` : ''}
         </ul>
         <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px"
                 onclick="app.runDemo('${s.id}')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
-          开始演示
+          ${this._t('demoStartBtn')}
         </button>
       </div>`).join('');
   }
@@ -1576,7 +1894,7 @@ class TabClawApp {
     document.getElementById('demo-control').classList.remove('hidden');
 
     // 1. Load example files
-    this._appendSystemMessage(`⏳ 正在加载示例数据：${scenario.files.join('、')}…`);
+    this._appendSystemMessage(this._t('demoLoadingData', scenario.files.join('、')));
     try {
       const result = await this._api('POST', '/api/demo/load', {
         files: scenario.files,
@@ -1584,9 +1902,9 @@ class TabClawApp {
       });
       await this._loadTables();
       const names = result.loaded.map(t => `${t.name}（${t.rows} 行 × ${t.cols} 列）`).join('，');
-      this._appendSystemMessage(`✓ 数据加载完成：${names}`);
+      this._appendSystemMessage(this._t('demoLoadedData', names));
     } catch (e) {
-      this._appendSystemMessage(`✗ 数据加载失败：${e.message}`);
+      this._appendSystemMessage(this._t('demoLoadFailed', e.message));
       this._demoCleanup();
       return;
     }
@@ -1602,7 +1920,7 @@ class TabClawApp {
 
       // Update progress
       document.getElementById('demo-control-step').textContent =
-        `· 步骤 ${i + 1} / ${scenario.queries.length}`;
+        `· ${this._t('demoStepLabel', i + 1, scenario.queries.length)}`;
 
       // Divider in chat
       this._appendDemoStepDivider(i + 1, scenario.queries.length, scenario.queries[i]);
@@ -1626,11 +1944,9 @@ class TabClawApp {
     this._demoCleanup();
 
     if (finished) {
-      this._appendSystemMessage(
-        `🎉 演示完成！「${scenario.title}」共执行 ${scenario.queries.length} 个分析步骤。`
-      );
+      this._appendSystemMessage(this._t('demoComplete', scenario.title, scenario.queries.length));
     } else {
-      this._appendSystemMessage('⏹ 演示已停止。');
+      this._appendSystemMessage(this._t('demoStopped'));
     }
   }
 
@@ -1650,7 +1966,7 @@ class TabClawApp {
     const shortQ = queryText.length > 50 ? queryText.slice(0, 50) + '…' : queryText;
     el.innerHTML = `
       <div class="demo-step-line"></div>
-      <span class="demo-step-label">步骤 ${stepNum} / ${total}</span>
+      <span class="demo-step-label">${this._t('demoStepLabel', stepNum, total)}</span>
       <div class="demo-step-line"></div>`;
     this._chatContainer().appendChild(el);
     this._scrollChat();
@@ -1685,9 +2001,9 @@ class TabClawApp {
       <div class="clarify-options" id="${cardId}-opts">${optionsHtml}</div>
       <div class="clarify-custom-row" id="${cardId}-custom">
         <input type="text" class="clarify-input" id="${cardId}-input"
-               placeholder="或自定义说明…"
+               placeholder="${this._t('clarifyPlaceholder')}"
                onkeydown="if(event.key==='Enter')app._submitClarification('${cardId}',null)" />
-        <button class="clarify-submit-btn" onclick="app._submitClarification('${cardId}',null)">确认</button>
+        <button class="clarify-submit-btn" onclick="app._submitClarification('${cardId}',null)">${this._t('clarifyConfirm')}</button>
       </div>`;
 
     this._chatContainer().appendChild(el);
@@ -1722,7 +2038,7 @@ class TabClawApp {
     const customRow = document.getElementById(`${cardId}-custom`);
     if (customRow) customRow.style.display = 'none';
 
-    const clarifiedMsg = `${originalMsg}\n\n[用户补充说明: ${selectedText}]`;
+    const clarifiedMsg = `${originalMsg}\n\n${this._t('clarifyNote', selectedText)}`;
 
     if (this.state.planMode) {
       this._generateAndShowPlan(clarifiedMsg);
@@ -1745,13 +2061,12 @@ class TabClawApp {
     div.innerHTML = `
       <span class="skill-learned-icon">🧠</span>
       <span class="skill-learned-text">
-        从本次推理中抽象出新 Skill：<strong>${this._esc(skill.name)}</strong>
-        — ${this._esc(skill.description)}
+        ${this._t('skillLearnedText', this._esc(skill.name), this._esc(skill.description))}
       </span>
       <span class="skill-learned-mode">${modeLabel}</span>`;
     body.appendChild(div);
     this._scrollChat();
-    this._notify(`New skill learned: ${skill.name}`, 'success');
+    this._notify(this._t('skillLearnedNew', skill.name), 'success');
   }
 }
 

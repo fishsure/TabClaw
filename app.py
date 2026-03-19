@@ -36,6 +36,8 @@ planner = Planner(llm, memory_manager)
 tables: Dict[str, Dict] = {}          # table_id -> {name, df, source, filename}
 chat_history: List[Dict] = []
 
+AUTO_COMPACT_THRESHOLD = 20   # messages before auto-compaction kicks in
+
 # Static files
 STATIC_DIR = Path(__file__).parent / "static"
 ASSET_DIR = Path(__file__).parent / "asset"
@@ -185,6 +187,14 @@ async def chat(request: ChatRequest):
     use_multi = multi_executor.should_activate(request.message, tables)
 
     async def generate():
+        # Auto-compact: if history is long, summarise before the new request
+        if len(chat_history) >= AUTO_COMPACT_THRESHOLD:
+            old_count = len(chat_history)
+            summary = await _do_compact(chat_history)
+            if summary:
+                chat_history[:] = [{"role": "assistant", "content": summary}]
+                yield _sse({"type": "compacted", "old_count": old_count,
+                            "summary": summary[:120] + ("…" if len(summary) > 120 else "")})
         try:
             if use_multi:
                 gen = multi_executor.execute_multi(
@@ -223,6 +233,14 @@ async def chat(request: ChatRequest):
 @app.post("/api/execute-plan")
 async def execute_plan(request: ExecutePlanRequest):
     async def generate():
+        # Auto-compact before plan execution
+        if len(chat_history) >= AUTO_COMPACT_THRESHOLD:
+            old_count = len(chat_history)
+            summary = await _do_compact(chat_history)
+            if summary:
+                chat_history[:] = [{"role": "assistant", "content": summary}]
+                yield _sse({"type": "compacted", "old_count": old_count,
+                            "summary": summary[:120] + ("…" if len(summary) > 120 else "")})
         try:
             async for event in executor.execute_plan(
                 message=request.message,
@@ -253,6 +271,46 @@ async def execute_plan(request: ExecutePlanRequest):
 async def clear_history():
     chat_history.clear()
     return {"status": "cleared"}
+
+
+async def _do_compact(history: List[Dict]) -> Optional[str]:
+    """Ask the LLM to summarise chat_history. Returns summary text or None."""
+    if not history:
+        return None
+    lines = []
+    for m in history:
+        role = m.get("role", "")
+        content = (m.get("content") or "")[:400]
+        if role in ("user", "assistant") and content:
+            lines.append(f"[{role.upper()}]: {content}")
+    if not lines:
+        return None
+    prompt = (
+        "Summarise the following conversation history into a compact context block "
+        "(max 350 words). Preserve: key user goals, table names and structures "
+        "discussed, important findings, analysis performed, and any user preferences "
+        "mentioned. Write in third person, starting with "
+        "\"Summary of previous conversation:\".\n\n"
+        + "\n\n".join(lines)
+    )
+    try:
+        resp = await llm.chat([{"role": "user", "content": prompt}])
+        return (resp.content or "").strip() or None
+    except Exception:
+        return None
+
+
+@app.post("/api/chat/compact")
+async def compact_history():
+    """Manual compaction: summarise history and replace it with the summary."""
+    old_count = len(chat_history)
+    if old_count < 4:
+        return {"status": "skipped", "reason": "history too short", "old_count": old_count}
+    summary = await _do_compact(chat_history)
+    if not summary:
+        return {"status": "error", "reason": "LLM failed to generate summary"}
+    chat_history[:] = [{"role": "assistant", "content": summary}]
+    return {"status": "compacted", "old_count": old_count, "summary": summary}
 
 
 # ---------------------------------------------------------------------------

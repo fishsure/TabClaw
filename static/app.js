@@ -146,8 +146,9 @@ class TabClawApp {
     // Theme toggle
     document.getElementById('theme-btn').addEventListener('click', () => this._toggleTheme());
 
-    // Clear chat
+    // Clear / Compact chat
     document.getElementById('clear-chat-btn').addEventListener('click', () => this._clearChat());
+    document.getElementById('compact-chat-btn').addEventListener('click', () => this._compactChat());
 
     // Demo
     document.getElementById('demo-btn').addEventListener('click', () => this.showDemoModal());
@@ -535,6 +536,10 @@ class TabClawApp {
 
       case 'reflect_done':
         this._markReflectDone(msgId);
+        break;
+
+      case 'compacted':
+        this._appendCompactedNotice(event.old_count, event.summary);
         break;
 
       case 'skill_learned':
@@ -979,6 +984,47 @@ class TabClawApp {
   _setInputEnabled(enabled) {
     document.getElementById('message-input').disabled = !enabled;
     document.getElementById('send-btn').disabled = !enabled;
+  }
+
+  async _compactChat() {
+    const btn = document.getElementById('compact-chat-btn');
+    btn.disabled = true;
+    btn.textContent = 'Compacting…';
+    try {
+      const data = await this._api('POST', '/api/chat/compact');
+      if (data.status === 'compacted') {
+        this._appendCompactedNotice(data.old_count, data.summary);
+        this._notify(`Compacted ${data.old_count} messages into a summary`, 'success');
+      } else if (data.status === 'skipped') {
+        this._notify('History is too short to compact', 'info');
+      } else {
+        this._notify('Compaction failed', 'error');
+      }
+    } catch (e) {
+      this._notify(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+        <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg> Compact`;
+    }
+  }
+
+  _appendCompactedNotice(oldCount, summary) {
+    const el = document.createElement('div');
+    el.className = 'compact-notice';
+    el.innerHTML = `
+      <div class="compact-notice-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+          <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+        <span>Chat compacted · ${oldCount} messages → 1 summary</span>
+      </div>
+      ${summary ? `<div class="compact-notice-summary">${this._esc(summary)}</div>` : ''}`;
+    this._chatContainer().appendChild(el);
+    this._scrollChat();
   }
 
   async _clearChat() {

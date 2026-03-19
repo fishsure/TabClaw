@@ -107,11 +107,11 @@ From the same team: **Claw-R1** is a training framework that bridges Agentic RL 
 
 → [Project Page](https://agentr1.github.io/) · [Documentation](https://agentr1.github.io/Claw-R1/)
 
-### 🧠 [TableMind++](https://arxiv.org/abs/2509.06278) — Uncertainty-Aware Programmatic Agent for Table Reasoning
+### 🧠 [TableMind++](https://arxiv.org/abs/2603.07528) — Uncertainty-Aware Programmatic Agent for Table Reasoning
 
 From the same team: **TableMind++** tackles hallucination in multi-turn table reasoning through a two-stage training strategy (SFT warm-up + RAPO reinforcement fine-tuning) paired with a dynamic uncertainty-aware inference framework. Three inference-time mechanisms — Memory-Guided Plan Pruning, Confidence-Based Action Refinement, and Dual-Weighted Trajectory Aggregation — work together to suppress both epistemic and aleatoric uncertainty, achieving state-of-the-art results across WikiTQ, TabMWP, TabFact, HiTab, and FinQA.
 
-→ [Paper](https://arxiv.org/abs/2509.06278) · [Model](https://huggingface.co/Jclennon/TableMind) · [Dataset](https://huggingface.co/datasets/Jclennon/TableMind-data)
+→ [Paper](https://arxiv.org/abs/2603.07528) · [Model](https://huggingface.co/Jclennon/TableMind) · [Dataset](https://huggingface.co/datasets/Jclennon/TableMind-data)
 
 ---
 ## Contributors

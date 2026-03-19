@@ -2,21 +2,22 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
-DATA_PATH = Path(__file__).parent.parent / "data" / "memory.json"
+_DEFAULT_DATA_PATH = Path(__file__).parent.parent / "data" / "memory.json"
 
 CATEGORIES = ["preferences", "domain_knowledge", "user_context", "history_insights"]
 
 
 class MemoryManager:
-    def __init__(self):
+    def __init__(self, data_path: Optional[Path] = None):
+        self._data_path = data_path or _DEFAULT_DATA_PATH
         self._load()
 
     def _load(self):
-        if DATA_PATH.exists():
-            with open(DATA_PATH) as f:
+        if self._data_path.exists():
+            with open(self._data_path) as f:
                 self._data = json.load(f)
         else:
             self._data = {c: {} for c in CATEGORIES}
@@ -25,8 +26,8 @@ class MemoryManager:
             self._data.setdefault(c, {})
 
     def _save(self):
-        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(DATA_PATH, "w") as f:
+        self._data_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._data_path, "w") as f:
             json.dump(self._data, f, indent=2, ensure_ascii=False)
 
     def get_all(self) -> Dict:

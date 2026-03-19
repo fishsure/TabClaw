@@ -1,12 +1,12 @@
 """Skill registry — manages built-in and custom skills."""
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from skills.builtin import BUILTIN_SKILLS
 from skills.code_skill import execute_python
 
-DATA_PATH = Path(__file__).parent.parent / "data" / "custom_skills.json"
+_DEFAULT_DATA_PATH = Path(__file__).parent.parent / "data" / "custom_skills.json"
 
 # OpenAI-format tool definitions for every built-in skill
 BUILTIN_TOOL_DEFS = [
@@ -366,18 +366,19 @@ CODE_TOOL_DEF = {
 
 
 class SkillRegistry:
-    def __init__(self):
+    def __init__(self, data_path: Optional[Path] = None):
+        self._data_path = data_path or _DEFAULT_DATA_PATH
         self._custom: List[Dict] = self._load_custom()
 
     def _load_custom(self) -> List[Dict]:
-        if DATA_PATH.exists():
-            with open(DATA_PATH) as f:
+        if self._data_path.exists():
+            with open(self._data_path) as f:
                 return json.load(f)
         return []
 
     def _save_custom(self):
-        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(DATA_PATH, "w") as f:
+        self._data_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._data_path, "w") as f:
             json.dump(self._custom, f, indent=2, ensure_ascii=False)
 
     # ------------------------------------------------------------------

@@ -133,6 +133,10 @@ class AgentExecutor:
 
             try:
                 async for chunk in self.llm.stream_chat(msgs, tools=tools if tools else None):
+                    # Usage event (dict) emitted by LLMClient for token counting
+                    if isinstance(chunk, dict):
+                        yield chunk
+                        continue
                     choice = chunk.choices[0] if chunk.choices else None
                     if not choice:
                         continue

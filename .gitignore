@@ -6,6 +6,9 @@ setting.txt
 # ── Runtime state (user-generated, not part of source) ──────────────────────
 data/memory.json
 data/custom_skills.json
+data/users.db
+data/users/
+data/jwt_secret.key
 
 # ── Uploaded files ───────────────────────────────────────────────────────────
 uploads/

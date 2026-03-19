@@ -83,6 +83,8 @@ class TabClawApp {
       demoRunning: false,
       // Clarification state
       clarifying: false,
+      // Auth state
+      currentUser: null,
     };
 
     this._streamMsgId = null; // DOM id of the message being streamed
@@ -101,11 +103,25 @@ class TabClawApp {
     this._lang = localStorage.getItem('lang') || 'en';
     this._applyTheme(localStorage.getItem('theme') || 'dark');
     this._bindEvents();
+    this._loadCurrentUser();
+    this._autoresize(document.getElementById('message-input'));
+    if (this._lang === 'zh') this._applyLangLabels();
+  }
+
+  async _loadCurrentUser() {
+    try {
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+    } catch (e) {
+      // 401 → redirect to login
+      window.location.href = '/';
+      return;
+    }
     this._loadTables();
     this._loadSkills();
     this._loadMemory();
-    this._autoresize(document.getElementById('message-input'));
-    if (this._lang === 'zh') this._applyLangLabels();
   }
 
   _bindEvents() {
@@ -205,6 +221,11 @@ class TabClawApp {
         });
       }
     });
+
+    // Settings panel
+    document.getElementById('settings-logout-btn').addEventListener('click', () => this._logout());
+    document.getElementById('settings-save-key-btn').addEventListener('click', () => this._saveApiKey());
+    document.getElementById('settings-clear-key-btn').addEventListener('click', () => this._clearApiKey());
   }
 
   _closeModalById(id) {
@@ -264,7 +285,7 @@ class TabClawApp {
     const clearLabel = document.querySelector('#clear-chat-btn .btn-label');
     if (clearLabel) clearLabel.textContent = zh ? '清空对话' : 'Clear Chat';
     // Sidebar tabs
-    const tabMap = { tables: ['Tables', '数据表'], skills: ['Skills', '技能'], memory: ['Memory', '记忆'] };
+    const tabMap = { tables: ['Tables', '数据表'], skills: ['Skills', '技能'], memory: ['Memory', '记忆'], settings: ['Settings', '设置'] };
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
       const [en, zh_] = tabMap[tab.dataset.tab] || [];
       if (en) tab.textContent = zh ? zh_ : en;
@@ -312,9 +333,13 @@ class TabClawApp {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
+    if (res.status === 401) {
+      window.location.href = '/';
+      throw new Error('Unauthenticated');
+    }
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || `HTTP ${res.status}`);
+      const data = await res.json().catch(() => null);
+      throw new Error((data && data.detail) || `HTTP ${res.status}`);
     }
     return res.json();
   }
@@ -638,6 +663,15 @@ class TabClawApp {
       case 'error':
         if (!event.agent_id) {
           this._appendToMessage(msgId, `\n\n⚠️ **Error:** ${event.content}`);
+        }
+        break;
+
+      case 'token_update':
+        if (this.state.currentUser) {
+          this.state.currentUser.token_used = event.used;
+          this.state.currentUser.token_budget = event.budget;
+          this.state.currentUser.has_own_key = event.has_own_key;
+          this._updateTokenDisplay();
         }
         break;
     }
@@ -1817,6 +1851,86 @@ class TabClawApp {
     body.appendChild(div);
     this._scrollChat();
     this._notify(`New skill learned: ${skill.name}`, 'success');
+  }
+
+  // -----------------------------------------------------------------------
+  // Auth & Settings
+  // -----------------------------------------------------------------------
+
+  _renderUserInfo() {
+    const u = this.state.currentUser;
+    if (!u) return;
+    const nameEl = document.getElementById('settings-username');
+    if (nameEl) nameEl.textContent = u.username;
+    const badge = document.getElementById('settings-own-key-badge');
+    if (badge) badge.classList.toggle('hidden', !u.has_own_key);
+  }
+
+  _updateTokenDisplay() {
+    const u = this.state.currentUser;
+    if (!u) return;
+
+    // Quota section in settings panel
+    const quotaSection = document.getElementById('settings-quota-section');
+    if (quotaSection) quotaSection.classList.toggle('hidden', u.has_own_key);
+
+    // Footer (hidden when user has own key)
+    const footer = document.getElementById('token-quota-footer');
+    if (footer) footer.classList.toggle('hidden', u.has_own_key);
+
+    if (!u.has_own_key) {
+      const usedK = Math.round((u.token_used || 0) / 1000);
+      const budgetK = Math.round((u.token_budget || 1000000) / 1000);
+      const pct = Math.min(100, Math.round(((u.token_used || 0) / (u.token_budget || 1)) * 100));
+
+      const fill = document.getElementById('settings-token-fill');
+      if (fill) fill.style.width = pct + '%';
+
+      const text = document.getElementById('settings-token-text');
+      if (text) text.textContent = `${usedK.toLocaleString()}k / ${budgetK.toLocaleString()}k tokens used`;
+
+      const footerText = document.getElementById('token-footer-text');
+      if (footerText) footerText.textContent = `${usedK.toLocaleString()}k / ${budgetK.toLocaleString()}k`;
+    }
+
+    // Update own-key badge in settings
+    const badge = document.getElementById('settings-own-key-badge');
+    if (badge) badge.classList.toggle('hidden', !u.has_own_key);
+  }
+
+  async _logout() {
+    try {
+      await this._api('POST', '/api/auth/logout');
+    } catch {}
+    window.location.href = '/';
+  }
+
+  async _saveApiKey() {
+    const key = document.getElementById('settings-api-key').value.trim();
+    const url = document.getElementById('settings-base-url').value.trim();
+    if (!key) { this._notify('Please enter an API key', 'error'); return; }
+    try {
+      await this._api('POST', '/api/settings/api-key', { api_key: key, base_url: url });
+      document.getElementById('settings-api-key').value = '';
+      document.getElementById('settings-base-url').value = '';
+      // Refresh user info
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+      this._notify('API key saved', 'success');
+    } catch (e) { this._notify(`Error: ${e.message}`, 'error'); }
+  }
+
+  async _clearApiKey() {
+    try {
+      await this._api('DELETE', '/api/settings/api-key');
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+      this._notify('API key cleared', 'success');
+    } catch (e) { this._notify(`Error: ${e.message}`, 'error'); }
   }
 }
 

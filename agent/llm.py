@@ -17,10 +17,20 @@ class LLMClient:
         return resp.choices[0].message
 
     async def stream_chat(self, messages: List[Dict], tools: Optional[List] = None) -> AsyncGenerator:
-        """Streaming chat, yields raw chunks."""
-        kwargs = dict(model=self.model, messages=messages, temperature=0.1, stream=True)
+        """Streaming chat, yields raw chunks. Final synthetic chunk may be {"type": "usage", "tokens": N}."""
+        kwargs = dict(
+            model=self.model,
+            messages=messages,
+            temperature=0.1,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
         if tools:
             kwargs["tools"] = tools
         stream = await self.client.chat.completions.create(**kwargs)
         async for chunk in stream:
-            yield chunk
+            if chunk.usage is not None:
+                total = (chunk.usage.prompt_tokens or 0) + (chunk.usage.completion_tokens or 0)
+                yield {"type": "usage", "tokens": total}
+            else:
+                yield chunk

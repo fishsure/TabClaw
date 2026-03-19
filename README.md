@@ -74,7 +74,9 @@ Open **http://localhost:8000** in your browser. Click **一键体验** to try a 
 
 ## Demo
 
-<p align="center"><img src="asset/TabClaw_demo.png" alt="TabClaw UI" width="85%" /></p>
+<p align="center"><img src="asset/TabClaw_demo.png" alt="TabClaw UI (Light)" width="85%" /></p>
+
+<p align="center"><img src="asset/dark_demo.png" alt="TabClaw UI (Dark)" width="85%" /></p>
 
 <p align="center"><img src="asset/infer.png" alt="Agent Reasoning in Action" width="85%" /></p>
 

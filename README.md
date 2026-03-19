@@ -116,7 +116,7 @@ From the same team: **TableMind++** tackles hallucination in multi-turn table re
 ---
 ## Contributors
 
-**Team Members**: [Shuo Yu](https://fishsure.github.io/), [Daoyu Wang](https://melmaphother.github.io/), Qingchuan Li, Xiaoyu Tao, Qingyang Mao
+**Team Members**: [Shuo Yu](https://fishsure.github.io/), [Daoyu Wang](https://melmaphother.github.io/), Qingchuan Li, Xiaoyu Tao, Qingyang Mao, Yitong Zhou
 
 **Supervisors**: [Mingyue Cheng](https://mingyue-cheng.github.io/), [Qi Liu](http://staff.ustc.edu.cn/~qiliuql/), Enhong Chen
 
@@ -137,7 +137,7 @@ If you use TabClaw in your research or project, please cite:
 ```bibtex
 @misc{tabclaw2026,
   title        = {TabClaw: A Local AI Agent for Conversational Table Analysis},
-  author       = {Yu, Shuo and Wang, Daoyu and Li, Qingchuan and Tao, Xiaoyu and Mao, Qingyang and Cheng, Mingyue and Liu, Qi and Chen, Enhong},
+  author       = {Yu, Shuo and Wang, Daoyu and Li, Qingchuan and Tao, Xiaoyu and Mao, Qingyang and Zhou, Yitong and Cheng, Mingyue and Liu, Qi and Chen, Enhong},
   year         = {2026},
   howpublished = {\url{https://github.com/fishsure/TabClaw}}
 }

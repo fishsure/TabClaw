@@ -14,6 +14,12 @@ Drop in a CSV or Excel file and describe what you want. TabClaw shows you its pl
 
 ---
 
+## 🗞️ News
+
+- **[2026-03-19]** TabClaw is now open-source! Code and docs are publicly available on GitHub.
+
+---
+
 ## What makes TabClaw different
 
 ### 🙋 It asks when it's not sure
@@ -106,7 +112,7 @@ From the same team: **Claw-R1** is a training framework that bridges Agentic RL 
 
 **Team Members**: Shuo Yu, Daoyu Wang, Qingchuan Li
 
-**Supervisors**: Qi Liu, Mingyue Cheng
+**Supervisors**: [Mingyue Cheng](https://mingyue-cheng.github.io/), [Qi Liu](http://staff.ustc.edu.cn/~qiliuql/), Enhong Chen
 
 **Affiliation**: State Key Laboratory of Cognitive Intelligence, University of Science and Technology of China
 

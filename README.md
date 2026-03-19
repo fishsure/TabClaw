@@ -44,6 +44,11 @@ If a request could reasonably mean several different things, TabClaw pauses and 
 ### 🛠️ Fully extensible
 You can define your own skills — write a prompt template or drop in Python code — and the agent will call them just like built-in skills. Combined with skill learning, TabClaw gradually builds a library tailored to your specific workflows.
 
+### 🗜️ It compacts when conversations grow long
+As conversations accumulate, TabClaw automatically summarises prior history into a compact context block before it sends a new request — keeping the agent focused without losing important context. You can also trigger compaction manually at any time via the **Compact** button.
+
+<p align="center"><img src="asset/campact.png" alt="Chat Compaction" width="75%" /></p>
+
 ---
 
 ## Quick Start

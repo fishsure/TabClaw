@@ -1,6 +1,15 @@
+<h1 align="center"> TabClaw: Interactive AI Agent for Table Analysis </h1>
+
+<p align="center">
+  <a href="https://fishsure.github.io/TabClaw/"><img src="https://img.shields.io/badge/Project-Home-orange.svg" alt="Project Home"></a>
+  <a href="https://github.com/fishsure/TabClaw/stargazers"><img src="https://img.shields.io/github/stars/fishsure/TabClaw" alt="GitHub Repo stars"></a>
+  <a href="https://github.com/fishsure/TabClaw/network/members"><img src="https://img.shields.io/github/forks/fishsure/TabClaw" alt="GitHub forks"></a>
+  <a href="https://fishsure.github.io/TabClaw/"><img src="https://img.shields.io/badge/docs-latest-blue.svg" alt="Docs"></a>
+</p>
+
 <img src="asset/logo_rmbg.png" alt="TabClaw" width="100%" />
 
-# TabClaw: Interactive AI Agent for Table Analysis
+
 
 > **Personalized. Self-evolving. Fully interactive.**
 

@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from config import API_KEY, BASE_URL, DEFAULT_MODEL
+from config import API_KEY, BASE_URL, DEFAULT_MODEL, DEFAULT_MODEL_EXTRA_PARAMS
 from agent.llm import LLMClient
 from agent.executor import AgentExecutor
 from agent.planner import Planner
@@ -25,7 +25,7 @@ from skills.registry import SkillRegistry
 
 app = FastAPI(title="TabClaw", version="0.1.0")
 
-llm = LLMClient(api_key=API_KEY, base_url=BASE_URL, model=DEFAULT_MODEL)
+llm = LLMClient(api_key=API_KEY, base_url=BASE_URL, model=DEFAULT_MODEL, model_extra_params=DEFAULT_MODEL_EXTRA_PARAMS)
 skill_registry = SkillRegistry()
 memory_manager = MemoryManager()
 executor = AgentExecutor(llm, skill_registry, memory_manager)

@@ -12,3 +12,14 @@ API_KEY=your_api_key_here
 #   SiliconFlow:  https://api.siliconflow.cn/v1
 #   Ollama:       http://localhost:11434/v1
 BASE_URL=https://api.openai.com/v1
+
+# API model configuration: default model + provider-specific extra params (e.g. DeepSeek thinking mode)
+# Examples:
+#   DeepSeek:     https://api.deepseek.com/v1
+#       DEFAULT_MODEL=deepseek-chat
+#       DEFAULT_MODEL_EXTRA_JSON={"thinking": {"type": "enabled"}}
+#   阿里云百炼:     https://dashscope.aliyuncs.com/compatible-mode/v1
+#       DEFAULT_MODEL=deepseek-v3.2
+#       DEFAULT_MODEL_EXTRA_JSON={"enable_thinking": true}
+DEFAULT_MODEL=deepseek-ai/DeepSeek-V3
+DEFAULT_MODEL_EXTRA_JSON=

@@ -143,6 +143,12 @@ From the same team: **TableMind++** tackles hallucination in multi-turn table re
 
 **Affiliation**: State Key Laboratory of Cognitive Intelligence, University of Science and Technology of China
 
+**Contact**: 
+
+Shuo Yu — [yu12345@mail.ustc.edu.cn](mailto:yu12345@mail.ustc.edu.cn) 
+
+ Mingyue Cheng — [mycheng@ustc.edu.cn](mailto:mycheng@ustc.edu.cn)
+
 ---
 
 ## Acknowledgements

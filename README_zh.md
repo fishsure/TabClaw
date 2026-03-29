@@ -145,6 +145,8 @@ bash run.sh
 
 **单位**：中国科学技术大学认知智能全国重点实验室
 
+**联系方式**：Shuo Yu — [yu12345@mail.ustc.edu.cn](mailto:yu12345@mail.ustc.edu.cn) · Mingyue Cheng — [mycheng@ustc.edu.cn](mailto:mycheng@ustc.edu.cn)
+
 ---
 
 ## 致谢

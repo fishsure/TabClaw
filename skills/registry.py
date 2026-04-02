@@ -1,12 +1,36 @@
-"""Skill registry — manages built-in and custom skills."""
+"""Skill registry — manages built-in, custom, and package (instruction) skills."""
 import json
+import re
+import shutil
+import zipfile
+from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from skills.builtin import BUILTIN_SKILLS
 from skills.code_skill import execute_python
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "custom_skills.json"
+SKILLS_DIR = Path(__file__).parent.parent / "data" / "skills"
+
+
+def _parse_skill_md(text: str) -> Dict:
+    """Parse YAML frontmatter from a SKILL.md file and return {name, description, metadata, body}."""
+    fm: Dict[str, Any] = {}
+    body = text
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    if match:
+        body = text[match.end():]
+        for line in match.group(1).splitlines():
+            if ":" in line:
+                key, _, val = line.partition(":")
+                fm[key.strip()] = val.strip().strip('"').strip("'")
+    return {
+        "name": fm.get("name", ""),
+        "description": fm.get("description", ""),
+        "metadata": fm,
+        "body": body.strip(),
+    }
 
 # OpenAI-format tool definitions for every built-in skill
 BUILTIN_TOOL_DEFS = [
@@ -368,6 +392,7 @@ CODE_TOOL_DEF = {
 class SkillRegistry:
     def __init__(self):
         self._custom: List[Dict] = self._load_custom()
+        self._packages: List[Dict] = self._load_packages()
 
     def _load_custom(self) -> List[Dict]:
         if DATA_PATH.exists():
@@ -381,11 +406,135 @@ class SkillRegistry:
             json.dump(self._custom, f, indent=2, ensure_ascii=False)
 
     # ------------------------------------------------------------------
+    # Package (instruction) skills — ClawdHub-compatible directory format
+    # ------------------------------------------------------------------
+
+    def _load_packages(self) -> List[Dict]:
+        """Scan data/skills/*/SKILL.md and load metadata for each."""
+        packages: List[Dict] = []
+        if not SKILLS_DIR.exists():
+            return packages
+        for skill_dir in sorted(SKILLS_DIR.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            skill_md = skill_dir / "SKILL.md"
+            if not skill_md.exists():
+                continue
+            parsed = _parse_skill_md(skill_md.read_text(encoding="utf-8"))
+            slug = skill_dir.name
+            meta: Dict[str, Any] = {}
+            meta_path = skill_dir / "_meta.json"
+            if meta_path.exists():
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            state_path = skill_dir / "_state.json"
+            state: Dict[str, Any] = {"enabled": True}
+            if state_path.exists():
+                try:
+                    state = json.loads(state_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            packages.append({
+                "slug": slug,
+                "name": parsed["name"] or slug,
+                "description": parsed["description"],
+                "version": meta.get("version", ""),
+                "enabled": state.get("enabled", True),
+                "body": parsed["body"],
+                "type": "package",
+            })
+        return packages
+
+    def install_from_zip(self, zip_bytes: bytes) -> Dict:
+        """Extract a ClawdHub skill zip into data/skills/<slug>/."""
+        SKILLS_DIR.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
+            names = zf.namelist()
+            # Find SKILL.md — may be at root or inside a single top-level directory
+            skill_md_path: Optional[str] = None
+            prefix = ""
+            for n in names:
+                if n == "SKILL.md" or n.endswith("/SKILL.md"):
+                    parts = n.split("/")
+                    if len(parts) <= 2:
+                        skill_md_path = n
+                        prefix = "/".join(parts[:-1])
+                        if prefix:
+                            prefix += "/"
+                        break
+            if not skill_md_path:
+                raise ValueError("No SKILL.md found in zip archive")
+
+            parsed = _parse_skill_md(zf.read(skill_md_path).decode("utf-8"))
+
+            # Determine slug from _meta.json or frontmatter name
+            slug = ""
+            meta_json_path = prefix + "_meta.json" if prefix else "_meta.json"
+            if meta_json_path in names:
+                try:
+                    meta = json.loads(zf.read(meta_json_path).decode("utf-8"))
+                    slug = meta.get("slug", "")
+                except Exception:
+                    pass
+            if not slug:
+                slug = re.sub(r"[^a-z0-9_-]", "-", (parsed["name"] or "skill").lower().replace(" ", "-"))
+
+            dest = SKILLS_DIR / slug
+            if dest.exists():
+                shutil.rmtree(dest)
+            dest.mkdir(parents=True)
+
+            for member in names:
+                if member.endswith("/"):
+                    continue
+                rel = member[len(prefix):] if prefix and member.startswith(prefix) else member
+                out = dest / rel
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_bytes(zf.read(member))
+
+        self._packages = self._load_packages()
+        pkg = next((p for p in self._packages if p["slug"] == slug), None)
+        return pkg or {"slug": slug, "name": parsed["name"], "status": "installed"}
+
+    def delete_package(self, slug: str) -> Dict:
+        dest = SKILLS_DIR / slug
+        if not dest.exists():
+            raise ValueError(f"Package skill '{slug}' not found")
+        shutil.rmtree(dest)
+        self._packages = [p for p in self._packages if p["slug"] != slug]
+        return {"status": "deleted"}
+
+    def toggle_package(self, slug: str, enabled: bool) -> Dict:
+        dest = SKILLS_DIR / slug
+        if not dest.exists():
+            raise ValueError(f"Package skill '{slug}' not found")
+        state_path = dest / "_state.json"
+        state_path.write_text(json.dumps({"enabled": enabled}), encoding="utf-8")
+        for p in self._packages:
+            if p["slug"] == slug:
+                p["enabled"] = enabled
+                break
+        return {"slug": slug, "enabled": enabled}
+
+    def list_packages(self) -> List[Dict]:
+        return [{k: v for k, v in p.items() if k != "body"} for p in self._packages]
+
+    def get_instruction_context(self) -> str:
+        """Return combined SKILL.md bodies from all enabled package skills,
+        suitable for injection into the system prompt."""
+        parts = []
+        for p in self._packages:
+            if p.get("enabled") and p.get("body"):
+                parts.append(f"### Skill: {p['name']}\n{p['body']}")
+        return "\n\n".join(parts)
+
+    # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
     def list_all(self) -> Dict:
-        # Build a lookup of parameters from the tool definitions
         params_lookup = {
             td["function"]["name"]: td["function"].get("parameters", {})
             for td in BUILTIN_TOOL_DEFS
@@ -400,7 +549,8 @@ class SkillRegistry:
             }
             for name in BUILTIN_META
         ]
-        return {"builtin": builtin, "custom": self._custom}
+        packages = self.list_packages()
+        return {"builtin": builtin, "custom": self._custom, "packages": packages}
 
     def list_custom(self) -> List[Dict]:
         return self._custom

@@ -310,11 +310,15 @@ html.light .header-logo {
 }
 .skill-dot.builtin { background: var(--green); }
 .skill-dot.custom { background: var(--purple); }
+.skill-dot.package { background: var(--orange, #f59e0b); }
 
 .skill-info { flex: 1; min-width: 0; }
 .skill-name { font-weight: 500; font-size: 12px; font-family: 'SF Mono', monospace; }
 .skill-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 .skill-category { font-size: 10px; color: var(--text-dim); }
+.skill-version { font-weight: 400; font-size: 10px; color: var(--text-dim); }
+.skill-disabled { opacity: 0.45; }
+.skill-disabled .skill-name { text-decoration: line-through; }
 
 .skill-actions {
   opacity: 0;

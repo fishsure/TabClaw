@@ -259,6 +259,11 @@ class AgentExecutor:
                 f"  - `{s['name']}`: {s['description']}" for s in custom
             )
 
+        instruction_ctx = self.skills.get_instruction_context()
+        instruction_text = ""
+        if instruction_ctx:
+            instruction_text = f"\n## Instruction Skills\n{instruction_ctx}"
+
         return f"""You are **TabClaw**, an expert AI assistant for table analysis and data manipulation.
 
 ## Available Tables
@@ -267,6 +272,7 @@ class AgentExecutor:
 ## User Memory & Preferences
 {mem_text}
 {custom_text}
+{instruction_text}
 
 ## Instructions
 - Use the available tools to interact with tables. Always call `table_info` first to understand structure.

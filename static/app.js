@@ -170,6 +170,13 @@ class TabClawApp {
     document.getElementById('add-skill-btn').addEventListener('click', () => this.showSkillModal());
     document.getElementById('skill-save-btn').addEventListener('click', () => this._saveSkill());
     document.getElementById('clear-skills-btn').addEventListener('click', () => this._clearAllSkills());
+    document.getElementById('import-skill-btn').addEventListener('click', () => {
+      document.getElementById('skill-zip-input').click();
+    });
+    document.getElementById('skill-zip-input').addEventListener('change', e => {
+      if (e.target.files.length) this._importSkillZip(e.target.files[0]);
+      e.target.value = '';
+    });
 
     // Memory
     document.getElementById('add-memory-btn').addEventListener('click', () => this.showMemoryModal());
@@ -1203,7 +1210,7 @@ class TabClawApp {
 
   _renderSkills() {
     const list = document.getElementById('skills-list');
-    const { builtin, custom } = this.state.skills;
+    const { builtin, custom, packages } = this.state.skills;
     let html = '<div class="skill-section-title">Built-in Skills</div>';
     html += (builtin || []).map(s => `
       <div class="skill-item skill-item-clickable" onclick="app.showBuiltinSkillDetail('${this._esc(s.name)}')">
@@ -1215,6 +1222,26 @@ class TabClawApp {
         </div>
         <button class="btn icon-only sm skill-info-btn" title="View details" onclick="event.stopPropagation();app.showBuiltinSkillDetail('${this._esc(s.name)}')">ℹ</button>
       </div>`).join('');
+
+    // Package (instruction) skills — ClawdHub-compatible
+    html += '<hr class="divider"><div class="skill-section-title">Package Skills</div>';
+    if (!packages || !packages.length) {
+      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip skill.</div>';
+    } else {
+      html += packages.map(s => `
+        <div class="skill-item${s.enabled ? '' : ' skill-disabled'}">
+          <span class="skill-dot package"></span>
+          <div class="skill-info">
+            <div class="skill-name">${this._esc(s.name)}${s.version ? ` <span class="skill-version">v${this._esc(s.version)}</span>` : ''}</div>
+            <div class="skill-desc">${this._esc(s.description)}</div>
+          </div>
+          <div class="skill-actions">
+            <button class="btn icon-only sm" title="${s.enabled ? 'Disable' : 'Enable'}" onclick="app._togglePackageSkill('${this._esc(s.slug)}', ${!s.enabled})">${s.enabled ? '⏸' : '▶'}</button>
+            <button class="btn icon-only sm danger" onclick="app._deletePackageSkill('${this._esc(s.slug)}')">🗑</button>
+          </div>
+        </div>`).join('');
+    }
+
     html += '<hr class="divider"><div class="skill-section-title">Custom Skills</div>';
     if (!custom || !custom.length) {
       html += '<div class="empty-state">No custom skills yet.</div>';
@@ -1362,6 +1389,38 @@ class TabClawApp {
     try {
       await this._api('DELETE', '/api/skills');
       this._notify('All custom skills cleared', 'success');
+      await this._loadSkills();
+    } catch (e) { this._notify(e.message, 'error'); }
+  }
+
+  async _importSkillZip(file) {
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const resp = await fetch('/api/skills/import', { method: 'POST', body: form });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || 'Import failed');
+      }
+      const result = await resp.json();
+      this._notify(`Skill "${result.name || result.slug}" installed`, 'success');
+      await this._loadSkills();
+    } catch (e) { this._notify(e.message, 'error'); }
+  }
+
+  async _togglePackageSkill(slug, enabled) {
+    try {
+      await this._api('PUT', `/api/skills/package/${slug}/toggle`, { enabled });
+      this._notify(enabled ? 'Skill enabled' : 'Skill disabled', 'success');
+      await this._loadSkills();
+    } catch (e) { this._notify(e.message, 'error'); }
+  }
+
+  async _deletePackageSkill(slug) {
+    if (!confirm(`Delete package skill "${slug}"? This removes the entire skill directory.`)) return;
+    try {
+      await this._api('DELETE', `/api/skills/package/${slug}`);
+      this._notify('Package skill deleted', 'success');
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
   }

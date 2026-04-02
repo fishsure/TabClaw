@@ -6,6 +6,15 @@ setting.txt
 # ── Runtime state (user-generated, not part of source) ──────────────────────
 data/memory.json
 data/custom_skills.json
+# Imported package skills (ClawdHub .zip → data/skills/<slug>/)
+data/skills/
+
+# Local secrets / DB (never commit)
+data/jwt_secret.key
+data/users.db
+
+# Example skill: keep *.zip in repo; extracted folder is reproducible
+skill-example/self-improving-agent/
 
 # ── Uploaded files ───────────────────────────────────────────────────────────
 uploads/

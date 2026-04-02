@@ -74,6 +74,7 @@
       <div class="sidebar-panel-header">
         <span>Skills</span>
         <div style="display:flex;gap:4px">
+          <button class="btn sm" id="import-skill-btn" title="Import skill package (.zip)">📦 Import</button>
           <button class="btn sm danger" id="clear-skills-btn" title="Clear all custom skills">🗑 Clear</button>
           <button class="btn sm primary" id="add-skill-btn">+ Add</button>
         </div>
@@ -81,6 +82,7 @@
       <div class="sidebar-scroll" id="skills-list">
         <!-- populated by JS -->
       </div>
+      <input type="file" id="skill-zip-input" accept=".zip" style="display:none" />
     </div>
 
     <!-- Memory panel -->

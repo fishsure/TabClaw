@@ -361,6 +361,39 @@ async def clear_skills():
     return skill_registry.clear_custom()
 
 
+# Package (instruction) skills — ClawdHub-compatible
+@app.post("/api/skills/import")
+async def import_skill_package(file: UploadFile = File(...)):
+    if not (file.filename or "").endswith(".zip"):
+        raise HTTPException(400, "Only .zip files are supported")
+    content = await file.read()
+    try:
+        result = skill_registry.install_from_zip(content)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return result
+
+
+@app.delete("/api/skills/package/{slug}")
+async def delete_skill_package(slug: str):
+    try:
+        return skill_registry.delete_package(slug)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+class PackageToggleBody(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/skills/package/{slug}/toggle")
+async def toggle_skill_package(slug: str, body: PackageToggleBody):
+    try:
+        return skill_registry.toggle_package(slug, body.enabled)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
 # ---------------------------------------------------------------------------
 # Memory endpoints
 # ---------------------------------------------------------------------------

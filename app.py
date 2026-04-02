@@ -326,42 +326,27 @@ async def list_skills():
     return skill_registry.list_all()
 
 
-class CustomSkillBody(BaseModel):
+class CreateSkillBody(BaseModel):
     name: str
     description: str
-    prompt: str
-    code: Optional[str] = None
-    parameters: Optional[Dict] = {}
+    body: str
 
 
-@app.post("/api/skills")
-async def add_skill(body: CustomSkillBody):
-    skill_id = uuid.uuid4().hex[:8]
-    return skill_registry.add_custom(skill_id, body.model_dump())
-
-
-@app.put("/api/skills/{skill_id}")
-async def update_skill(skill_id: str, body: CustomSkillBody):
-    try:
-        return skill_registry.update_custom(skill_id, body.model_dump())
-    except ValueError as e:
-        raise HTTPException(404, str(e))
-
-
-@app.delete("/api/skills/{skill_id}")
-async def delete_skill(skill_id: str):
-    try:
-        return skill_registry.delete_custom(skill_id)
-    except ValueError as e:
-        raise HTTPException(404, str(e))
+@app.post("/api/skills/create")
+async def create_skill(req: CreateSkillBody):
+    """Create a new package skill from name, description, and SKILL.md body."""
+    if not req.name or not req.description or not req.body:
+        raise HTTPException(400, "name, description, and body are required")
+    return skill_registry.create_package(req.name, req.description, req.body, source="manual")
 
 
 @app.delete("/api/skills")
 async def clear_skills():
-    return skill_registry.clear_custom()
+    """Delete all package skills."""
+    return skill_registry.clear_packages()
 
 
-# Package (instruction) skills — ClawdHub-compatible
+# Package (instruction) skills — ClawdHub / OpenClaw-compatible
 @app.post("/api/skills/import")
 async def import_skill_package(file: UploadFile = File(...)):
     if not (file.filename or "").endswith(".zip"):

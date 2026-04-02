@@ -75,7 +75,7 @@
         <span>Skills</span>
         <div style="display:flex;gap:4px">
           <button class="btn sm" id="import-skill-btn" title="Import skill package (.zip)">📦 Import</button>
-          <button class="btn sm danger" id="clear-skills-btn" title="Clear all custom skills">🗑 Clear</button>
+          <button class="btn sm danger" id="clear-skills-btn" title="Clear all package skills">🗑 Clear</button>
           <button class="btn sm primary" id="add-skill-btn">+ Add</button>
         </div>
       </div>
@@ -223,47 +223,27 @@
   </div>
 </div>
 
-<!-- Add / Edit skill modal -->
+<!-- Add skill modal (SKILL.md package format) -->
 <div id="skill-modal" class="modal-overlay hidden">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:580px">
     <div class="modal-header">
-      <div class="modal-title" id="skill-modal-title">Add Custom Skill</div>
+      <div class="modal-title" id="skill-modal-title">Add Skill</div>
       <button class="modal-close" onclick="app.hideSkillModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Skill Name (no spaces)</label>
-        <input class="form-input" id="skill-name-input" placeholder="e.g. analyze_sales" />
+        <label class="form-label">Skill Name (snake_case)</label>
+        <input class="form-input" id="skill-name-input" placeholder="e.g. profit_ranking_by_group" />
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <input class="form-input" id="skill-desc-input" placeholder="What this skill does (shown to the model)" />
+        <input class="form-input" id="skill-desc-input" placeholder="One-sentence description of what this skill does" />
       </div>
-      <!-- Mode toggle -->
-      <div class="skill-mode-toggle-row">
-        <span class="form-label" style="margin:0">Mode</span>
-        <div class="skill-mode-tabs">
-          <button class="skill-mode-tab active" id="skill-tab-prompt" onclick="app._switchSkillMode('prompt')">
-            💬 Prompt
-          </button>
-          <button class="skill-mode-tab" id="skill-tab-code" onclick="app._switchSkillMode('code')">
-            🐍 Python Code
-          </button>
-        </div>
-      </div>
-      <!-- Prompt panel -->
-      <div id="skill-panel-prompt" class="form-group">
-        <label class="form-label" style="margin-bottom:4px">System Prompt / Instructions</label>
-        <p class="form-hint">Describe what the LLM should do. Placeholders: <code>{table_name}</code>, <code>{user_request}</code>. A 30-row table preview is attached automatically.</p>
-        <textarea class="form-textarea" id="skill-prompt-input" rows="6"
-          placeholder="You are a sales analysis expert. Analyze the table {table_name} and {user_request}. Focus on revenue trends, top products, and regional performance. Be concise."></textarea>
-      </div>
-      <!-- Code panel (hidden by default) -->
-      <div id="skill-panel-code" class="form-group hidden">
-        <label class="form-label" style="margin-bottom:4px">Python Code</label>
-        <p class="form-hint">Write pandas code. Tables are available by ID or name. Assign a DataFrame to <code>result</code> to produce a new table. Runs in the same sandbox as Code Tool.</p>
-        <textarea class="form-textarea form-code-input" id="skill-code-input" rows="10"
-          placeholder="# Example: compute profit margin per region&#10;result = sales_2023.groupby('region').agg(&#10;    revenue=('revenue', 'sum'),&#10;    profit=('profit', 'sum')&#10;).assign(margin=lambda d: d.profit / d.revenue).reset_index()"></textarea>
+      <div class="form-group">
+        <label class="form-label" style="margin-bottom:4px">Instructions (Markdown)</label>
+        <p class="form-hint">Describe the analytical pattern and step-by-step guidance for the agent. Use headers and numbered lists. Reference built-in tools: <code>table_info</code>, <code>aggregate</code>, <code>sort_table</code>, <code>filter_rows</code>, <code>add_column</code>, etc.</p>
+        <textarea class="form-textarea form-code-input" id="skill-body-input" rows="10"
+          placeholder="## Pattern: Profit Ranking by Group&#10;&#10;When asked to rank groups by revenue or profit:&#10;&#10;1. Call `table_info` to identify the grouping column and value columns&#10;2. Use `aggregate` with the relevant group_by and agg_config (e.g. {&quot;revenue&quot;: &quot;sum&quot;})&#10;3. Optionally use `add_column` to compute derived metrics (e.g. margin = profit / revenue)&#10;4. Use `sort_table` with ascending=False to rank from highest to lowest&#10;5. Summarise the top and bottom groups in your response"></textarea>
       </div>
     </div>
     <div class="modal-footer">

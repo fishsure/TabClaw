@@ -28,7 +28,8 @@ class AgentExecutor:
         auto_learn: bool = False,
     ) -> AsyncGenerator:
         """Execute user request directly (no plan)."""
-        messages = self._build_messages(message, tables, history)
+        hook_context = await asyncio.to_thread(self.skills.run_event_hooks, "user_prompt")
+        messages = self._build_messages(message, tables, history, hook_context)
         tools = self.skills.get_tool_definitions(code_tool=code_tool)
         tool_calls_log: List[Dict] = []
         async for event in self._agent_stream(messages, tools, tables, result_tables_store):
@@ -54,8 +55,10 @@ class AgentExecutor:
         auto_learn: bool = False,
     ) -> AsyncGenerator:
         """Execute a user-approved plan step by step."""
+        hook_context = await asyncio.to_thread(self.skills.run_event_hooks, "user_prompt")
         base_messages = self._build_messages(
-            f"Original user request: {message}\nExecuting a plan step by step.", tables, history
+            f"Original user request: {message}\nExecuting a plan step by step.",
+            tables, history, hook_context,
         )
         tools = self.skills.get_tool_definitions(code_tool=code_tool)
         conversation = list(base_messages)
@@ -209,10 +212,17 @@ class AgentExecutor:
                     result_text = result.get("text", str(result)) if isinstance(result, dict) else str(result)
                     yield {"type": "tool_result", "skill": skill_name, "text": result_text}
 
+                    # Run PostToolUse hooks — append any output to the tool result
+                    hook_output = await asyncio.to_thread(
+                        self.skills.run_event_hooks, "post_tool", result_text
+                    )
+                    tool_content = (
+                        f"{result_text}\n\n{hook_output}" if hook_output else result_text
+                    )
                     msgs.append({
                         "role": "tool",
                         "tool_call_id": tc["id"],
-                        "content": result_text,
+                        "content": tool_content,
                     })
             else:
                 # No tool calls — final answer
@@ -225,12 +235,17 @@ class AgentExecutor:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _build_messages(self, message: str, tables: Dict, history: List) -> List:
+    def _build_messages(
+        self, message: str, tables: Dict, history: List, hook_context: str = ""
+    ) -> List:
         system = self._system_prompt(tables)
         msgs = [{"role": "system", "content": system}]
         # Keep last 12 history turns to stay within context limits
         msgs.extend(history[-12:])
-        msgs.append({"role": "user", "content": message})
+        user_content = message
+        if hook_context:
+            user_content = f"{message}\n\n{hook_context}"
+        msgs.append({"role": "user", "content": user_content})
         return msgs
 
     def _system_prompt(self, tables: Dict) -> str:
@@ -252,17 +267,10 @@ class AgentExecutor:
                 mem_lines.append(f"  [{cat}] {k}: {v}")
         mem_text = "\n".join(mem_lines) or "  (empty)"
 
-        custom = self.skills.list_custom()
-        custom_text = ""
-        if custom:
-            custom_text = "\n## Custom Skills\n" + "\n".join(
-                f"  - `{s['name']}`: {s['description']}" for s in custom
-            )
-
         instruction_ctx = self.skills.get_instruction_context()
         instruction_text = ""
         if instruction_ctx:
-            instruction_text = f"\n## Instruction Skills\n{instruction_ctx}"
+            instruction_text = f"\n## Package Skills\n{instruction_ctx}"
 
         return f"""You are **TabClaw**, an expert AI assistant for table analysis and data manipulation.
 
@@ -271,7 +279,6 @@ class AgentExecutor:
 
 ## User Memory & Preferences
 {mem_text}
-{custom_text}
 {instruction_text}
 
 ## Instructions
@@ -311,10 +318,6 @@ Rules:
     async def _exec_skill(
         self, skill_name: str, params: Dict, tables: Dict, result_tables_store: Dict
     ) -> Dict:
-        # Route custom skills to their own async handler
-        custom = next((s for s in self.skills.list_custom() if s["name"] == skill_name), None)
-        if custom:
-            return await self._exec_custom_skill(custom, params, tables, result_tables_store)
         try:
             result = await asyncio.to_thread(self.skills.execute_sync, skill_name, params, tables)
             if isinstance(result, dict) and "df" in result:
@@ -328,7 +331,6 @@ Rules:
                     "source": "computed",
                 }
                 preview = df.head(200).fillna("").to_dict("records")
-                # Prepend any print output from execute_python
                 extra = result.get("text", "") if isinstance(result, dict) else ""
                 creation_msg = (
                     f"Created table '{rname}' (ID: `{rid}`) with "
@@ -347,57 +349,6 @@ Rules:
             return {"text": str(result)}
         except Exception as e:
             return {"text": f"Error in skill `{skill_name}`: {e}"}
-
-    async def _exec_custom_skill(
-        self, skill: Dict, params: Dict, tables: Dict, result_tables_store: Dict
-    ) -> Dict:
-        """Execute a custom skill — code-based or prompt-based."""
-        table_id = params.get("table_id", "")
-        user_request = params.get("user_request", "")
-
-        # ── Code mode ────────────────────────────────────────────────────────
-        if skill.get("code"):
-            from skills.code_skill import execute_python
-            result = await asyncio.to_thread(
-                execute_python,
-                {"code": skill["code"], "result_name": skill["name"]},
-                tables,
-            )
-            if isinstance(result, dict) and "df" in result:
-                import uuid as _uuid
-                rid = "r_" + _uuid.uuid4().hex[:6]
-                rname = result.get("name", skill["name"])
-                df = result["df"]
-                result_tables_store[rid] = {"name": rname, "df": df, "source": "computed"}
-                preview = df.head(200).fillna("").to_dict("records")
-                extra = result.get("text", "")
-                creation_msg = f"Created table '{rname}' (ID: `{rid}`) with {len(df)} rows × {len(df.columns)} columns."
-                return {
-                    "text": (extra + "\n\n" + creation_msg).strip() if extra else creation_msg,
-                    "table": {"table_id": rid, "name": rname, "columns": df.columns.tolist(),
-                              "rows": preview, "total_rows": len(df)},
-                }
-            return result if isinstance(result, dict) else {"text": str(result)}
-
-        # ── Prompt mode ───────────────────────────────────────────────────────
-        prompt_template = skill.get("prompt") or skill.get("description", "")
-        table_name = tables.get(table_id, {}).get("name", table_id) if table_id else ""
-        system_prompt = prompt_template.replace("{table_name}", table_name).replace(
-            "{user_request}", user_request
-        )
-
-        # Attach a preview of the relevant table as context
-        context = system_prompt
-        if table_id and table_id in tables:
-            df = tables[table_id]["df"]
-            preview_csv = df.head(30).fillna("").to_csv(index=False)
-            context += f"\n\nTable '{table_name}' preview (first 30 rows):\n{preview_csv}"
-
-        resp = await self.llm.chat([
-            {"role": "system", "content": context},
-            {"role": "user", "content": user_request or f"Execute the '{skill['name']}' skill."},
-        ])
-        return {"text": (resp.content or "").strip()}
 
     async def _try_update_memory(self, user_message: str, tables: Dict):
         """Lightweight background memory extraction — non-critical."""

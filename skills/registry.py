@@ -1,4 +1,8 @@
-"""Skill registry — manages built-in, custom, and package (instruction) skills."""
+"""Skill registry — manages built-in and package (SKILL.md) skills.
+
+All user-created and auto-distilled skills are stored as SKILL.md packages
+in data/skills/<slug>/, compatible with the OpenClaw/ClawdHub format.
+"""
 import json
 import re
 import shutil
@@ -9,8 +13,9 @@ from typing import Dict, List, Any, Optional
 
 from skills.builtin import BUILTIN_SKILLS
 from skills.code_skill import execute_python
+from skills.hook_runner import get_skill_hooks, run_event_hooks as _run_event_hooks
+from skills.workspace_tools import WORKSPACE_TOOL_DEFS, WORKSPACE_SKILLS, WORKSPACE_DIR
 
-DATA_PATH = Path(__file__).parent.parent / "data" / "custom_skills.json"
 SKILLS_DIR = Path(__file__).parent.parent / "data" / "skills"
 
 
@@ -31,6 +36,7 @@ def _parse_skill_md(text: str) -> Dict:
         "metadata": fm,
         "body": body.strip(),
     }
+
 
 # OpenAI-format tool definitions for every built-in skill
 BUILTIN_TOOL_DEFS = [
@@ -391,22 +397,10 @@ CODE_TOOL_DEF = {
 
 class SkillRegistry:
     def __init__(self):
-        self._custom: List[Dict] = self._load_custom()
         self._packages: List[Dict] = self._load_packages()
 
-    def _load_custom(self) -> List[Dict]:
-        if DATA_PATH.exists():
-            with open(DATA_PATH) as f:
-                return json.load(f)
-        return []
-
-    def _save_custom(self):
-        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(DATA_PATH, "w") as f:
-            json.dump(self._custom, f, indent=2, ensure_ascii=False)
-
     # ------------------------------------------------------------------
-    # Package (instruction) skills — ClawdHub-compatible directory format
+    # Package (instruction) skills — ClawdHub / OpenClaw compatible
     # ------------------------------------------------------------------
 
     def _load_packages(self) -> List[Dict]:
@@ -441,18 +435,53 @@ class SkillRegistry:
                 "name": parsed["name"] or slug,
                 "description": parsed["description"],
                 "version": meta.get("version", ""),
+                "source": meta.get("source", "manual"),
                 "enabled": state.get("enabled", True),
                 "body": parsed["body"],
                 "type": "package",
+                "skill_dir": str(skill_dir),
+                "hooks": get_skill_hooks(skill_dir),
             })
         return packages
+
+    def create_package(self, name: str, description: str, body: str, source: str = "manual") -> Dict:
+        """Create a new SKILL.md package directly from name/description/body."""
+        SKILLS_DIR.mkdir(parents=True, exist_ok=True)
+        slug = re.sub(r"[^a-z0-9_-]", "-", name.lower().replace(" ", "-")).strip("-")
+        if not slug:
+            slug = "skill"
+
+        # Make slug unique if it already exists
+        base_slug = slug
+        counter = 1
+        while (SKILLS_DIR / slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        dest = SKILLS_DIR / slug
+        dest.mkdir(parents=True)
+
+        skill_md_content = f"""---
+name: {name}
+description: "{description}"
+---
+
+{body}
+"""
+        (dest / "SKILL.md").write_text(skill_md_content, encoding="utf-8")
+        (dest / "_meta.json").write_text(
+            json.dumps({"slug": slug, "source": source}), encoding="utf-8"
+        )
+
+        self._packages = self._load_packages()
+        pkg = next((p for p in self._packages if p["slug"] == slug), None)
+        return pkg or {"slug": slug, "name": name, "description": description, "status": "created"}
 
     def install_from_zip(self, zip_bytes: bytes) -> Dict:
         """Extract a ClawdHub skill zip into data/skills/<slug>/."""
         SKILLS_DIR.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
             names = zf.namelist()
-            # Find SKILL.md — may be at root or inside a single top-level directory
             skill_md_path: Optional[str] = None
             prefix = ""
             for n in names:
@@ -469,7 +498,6 @@ class SkillRegistry:
 
             parsed = _parse_skill_md(zf.read(skill_md_path).decode("utf-8"))
 
-            # Determine slug from _meta.json or frontmatter name
             slug = ""
             meta_json_path = prefix + "_meta.json" if prefix else "_meta.json"
             if meta_json_path in names:
@@ -494,6 +522,17 @@ class SkillRegistry:
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_bytes(zf.read(member))
 
+        # Copy .learnings/ templates to workspace if they don't exist there yet
+        learnings_src = dest / ".learnings"
+        if learnings_src.is_dir():
+            workspace_learnings = WORKSPACE_DIR / ".learnings"
+            workspace_learnings.mkdir(parents=True, exist_ok=True)
+            for tmpl in learnings_src.iterdir():
+                if tmpl.is_file():
+                    dest_file = workspace_learnings / tmpl.name
+                    if not dest_file.exists():
+                        shutil.copy2(str(tmpl), str(dest_file))
+
         self._packages = self._load_packages()
         pkg = next((p for p in self._packages if p["slug"] == slug), None)
         return pkg or {"slug": slug, "name": parsed["name"], "status": "installed"}
@@ -505,6 +544,16 @@ class SkillRegistry:
         shutil.rmtree(dest)
         self._packages = [p for p in self._packages if p["slug"] != slug]
         return {"status": "deleted"}
+
+    def clear_packages(self) -> Dict:
+        """Delete all package skills."""
+        count = len(self._packages)
+        if SKILLS_DIR.exists():
+            for skill_dir in list(SKILLS_DIR.iterdir()):
+                if skill_dir.is_dir():
+                    shutil.rmtree(skill_dir)
+        self._packages = []
+        return {"cleared": count}
 
     def toggle_package(self, slug: str, enabled: bool) -> Dict:
         dest = SKILLS_DIR / slug
@@ -519,7 +568,8 @@ class SkillRegistry:
         return {"slug": slug, "enabled": enabled}
 
     def list_packages(self) -> List[Dict]:
-        return [{k: v for k, v in p.items() if k != "body"} for p in self._packages]
+        _strip = {"body", "skill_dir", "hooks"}
+        return [{k: v for k, v in p.items() if k not in _strip} for p in self._packages]
 
     def get_instruction_context(self) -> str:
         """Return combined SKILL.md bodies from all enabled package skills,
@@ -529,6 +579,17 @@ class SkillRegistry:
             if p.get("enabled") and p.get("body"):
                 parts.append(f"### Skill: {p['name']}\n{p['body']}")
         return "\n\n".join(parts)
+
+    def run_event_hooks(self, event: str, tool_output: str = "") -> str:
+        """Run all enabled hook scripts for the given lifecycle event.
+
+        event: "user_prompt" | "post_tool" | "new_session" | "reset"
+        Returns combined stdout from all matching scripts.
+        """
+        return _run_event_hooks(self._packages, event, tool_output)
+
+    def has_package_skills(self) -> bool:
+        return any(p.get("enabled") for p in self._packages)
 
     # ------------------------------------------------------------------
     # Public API
@@ -550,70 +611,28 @@ class SkillRegistry:
             for name in BUILTIN_META
         ]
         packages = self.list_packages()
-        return {"builtin": builtin, "custom": self._custom, "packages": packages}
-
-    def list_custom(self) -> List[Dict]:
-        return self._custom
+        return {"builtin": builtin, "packages": packages}
 
     def get_tool_definitions(self, code_tool: bool = False) -> List[Dict]:
-        """Return OpenAI-format tool definitions for all enabled skills."""
+        """Return OpenAI-format tool definitions for all available skills.
+
+        Workspace file tools (read_file, write_file, list_files) are included
+        whenever at least one package skill is enabled, so the LLM can persist
+        learnings and notes as instructed by those skills.
+        """
         if code_tool:
-            # Only keep table_info for structure inspection; execute_python handles everything else
             table_info_def = next(d for d in BUILTIN_TOOL_DEFS if d["function"]["name"] == "table_info")
-            defs = [table_info_def, CODE_TOOL_DEF]
+            tools = [table_info_def, CODE_TOOL_DEF]
         else:
-            defs = list(BUILTIN_TOOL_DEFS)
-
-        # Always register custom skills as callable tools
-        for s in self._custom:
-            mode_hint = "Executes Python code." if s.get("code") else "Uses an LLM sub-call guided by a custom prompt."
-            defs.append({
-                "type": "function",
-                "function": {
-                    "name": s["name"],
-                    "description": f"{s['description']} ({mode_hint})",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "table_id": {"type": "string", "description": "ID of the table to work with"},
-                            "user_request": {"type": "string", "description": "Specific instructions or context for this invocation"},
-                        },
-                        "required": [],
-                    },
-                },
-            })
-        return defs
-
-    def add_custom(self, skill_id: str, skill: Dict) -> Dict:
-        entry = {"id": skill_id, "type": "custom", **skill}
-        self._custom.append(entry)
-        self._save_custom()
-        return entry
-
-    def update_custom(self, skill_id: str, skill: Dict) -> Dict:
-        for i, s in enumerate(self._custom):
-            if s["id"] == skill_id:
-                self._custom[i] = {"id": skill_id, "type": "custom", **skill}
-                self._save_custom()
-                return self._custom[i]
-        raise ValueError(f"Custom skill '{skill_id}' not found")
-
-    def delete_custom(self, skill_id: str) -> Dict:
-        before = len(self._custom)
-        self._custom = [s for s in self._custom if s["id"] != skill_id]
-        if len(self._custom) == before:
-            raise ValueError(f"Custom skill '{skill_id}' not found")
-        self._save_custom()
-        return {"status": "deleted"}
-
-    def clear_custom(self) -> Dict:
-        count = len(self._custom)
-        self._custom = []
-        self._save_custom()
-        return {"cleared": count}
+            tools = list(BUILTIN_TOOL_DEFS)
+        if self.has_package_skills():
+            tools = tools + WORKSPACE_TOOL_DEFS
+        return tools
 
     def execute_sync(self, skill_name: str, params: Dict, tables: Dict) -> Any:
-        """Execute a built-in or code skill synchronously."""
+        """Execute a built-in, workspace, or code skill synchronously."""
+        if skill_name in WORKSPACE_SKILLS:
+            return WORKSPACE_SKILLS[skill_name](params, tables)
         if skill_name == "execute_python":
             return execute_python(params, tables)
         if skill_name not in BUILTIN_SKILLS:

@@ -309,8 +309,8 @@ html.light .header-logo {
   flex-shrink: 0;
 }
 .skill-dot.builtin { background: var(--green); }
-.skill-dot.custom { background: var(--purple); }
 .skill-dot.package { background: var(--orange, #f59e0b); }
+.skill-badge-distilled { font-size: 11px; margin-right: 2px; }
 
 .skill-info { flex: 1; min-width: 0; }
 .skill-name { font-weight: 500; font-size: 12px; font-family: 'SF Mono', monospace; }

@@ -5,9 +5,10 @@ setting.txt
 
 # ── Runtime state (user-generated, not part of source) ──────────────────────
 data/memory.json
-data/custom_skills.json
-# Imported package skills (ClawdHub .zip → data/skills/<slug>/)
+# All skills stored as SKILL.md packages (data/skills/<slug>/)
 data/skills/
+# Workspace: persisted learnings / notes written by skills at runtime
+data/workspace/
 
 # Local secrets / DB (never commit)
 data/jwt_secret.key

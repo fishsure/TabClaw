@@ -1,13 +1,16 @@
 """
 SkillDistiller: after a task completes, review the tool call log and
-try to extract a reusable custom skill.
+try to extract a reusable skill as a SKILL.md package.
+
+Skills are stored as instruction-based SKILL.md files in data/skills/<slug>/,
+compatible with the OpenClaw/ClawdHub format. The skill body describes
+a behavioral pattern and guides the agent to use existing built-in tools.
 
 Triggered only when >= MIN_TOOL_CALLS tool calls were made — trivial
 one-shot queries are skipped entirely.
 """
 import json
 import re
-import uuid
 from typing import Dict, List, Optional
 
 MIN_TOOL_CALLS = 3  # minimum tool calls before attempting distillation
@@ -30,20 +33,14 @@ class SkillDistiller:
     ) -> Optional[Dict]:
         """
         Analyse the tool call log for a completed task and create a new
-        custom skill if a reusable pattern is found.
-        Returns the created skill dict, or None.
+        package skill (SKILL.md) if a reusable pattern is found.
+        Returns the created package dict, or None.
         """
         if len(tool_calls_log) < MIN_TOOL_CALLS:
             return None
 
-        existing_names = {s["name"] for s in self.skills.list_custom()}
+        existing_names = {p["name"] for p in self.skills.list_packages()}
         summary = self._format_tool_log(tool_calls_log)
-        has_python = any(t["name"] == "execute_python" for t in tool_calls_log)
-        python_hint = (
-            "If execute_python was used with non-trivial code, prefer a "
-            "code-mode skill — generalise the code so it works on any table."
-            if has_python else ""
-        )
 
         builtin_str = ", ".join(sorted(_BUILTIN_NAMES))
         existing_str = ", ".join(sorted(existing_names)) if existing_names else "none"
@@ -57,16 +54,14 @@ Tool calls made (in order):
 {summary}
 
 Already available built-in skills (do NOT recreate): {builtin_str}
-Already saved custom skills (do NOT duplicate): {existing_str}
+Already saved package skills (do NOT duplicate): {existing_str}
 
-{python_hint}
-
-Decide: is there a REUSABLE, GENERALIZABLE skill worth saving?
+Decide: is there a REUSABLE, GENERALIZABLE analytical pattern worth capturing as a skill?
 
 GOOD candidate:
 - Addresses a recurring data-analysis pattern (e.g. profit margin ranking,
   top-N per category, cohort retention, KPI report with multiple metrics)
-- Can be parameterised — not hard-coded to one specific dataset or column name
+- Can be described as general guidance — not hard-coded to one specific dataset or column name
 - Adds meaningful value beyond a single built-in skill
 
 BAD candidate:
@@ -74,23 +69,16 @@ BAD candidate:
 - Duplicate or near-duplicate of an existing skill
 - Trivially simple (single filter, sort, or lookup)
 
-If a good candidate exists, return:
+If a good candidate exists, return JSON with this format:
 {{
   "create": true,
   "name": "descriptive_snake_case_name",
   "description": "One sentence: what it does and when to use it.",
-  "mode": "code",
-  "code": "# Generalised Python code.\\n# Access tables via the 'tables' dict: tables[tid]['df']\\n# Assign final DataFrame to 'result'\\n..."
+  "body": "Markdown instruction body for SKILL.md — describe the pattern and step-by-step guidance using built-in tools (table_info, aggregate, sort_table, filter_rows, add_column, pivot_table, merge_tables, etc.). Be concrete about which tools to call and in what order. Use ## headers and numbered lists."
 }}
 
-OR for a prompt-based skill:
-{{
-  "create": true,
-  "name": "descriptive_snake_case_name",
-  "description": "One sentence: what it does and when to use it.",
-  "mode": "prompt",
-  "prompt": "Detailed reusable prompt template. Use {{{{table_name}}}} and {{{{user_request}}}} as placeholders."
-}}
+The body should guide the agent on HOW to approach this type of task, e.g.:
+"## Pattern: Revenue Ranking by Group\\n\\nWhen asked to rank groups by a metric:\\n1. Call `table_info` to identify grouping and value columns\\n2. Use `aggregate` with the relevant group_by and agg_config\\n3. Use `sort_table` to rank results\\n..."
 
 If no good candidate: {{"create": false}}
 
@@ -109,24 +97,13 @@ Output ONLY valid JSON, no other text."""
 
             name = (result.get("name") or "").strip()
             description = (result.get("description") or "").strip()
-            if not name or not description:
+            body = (result.get("body") or "").strip()
+            if not name or not description or not body:
                 return None
-            if name in existing_names or name in _BUILTIN_NAMES:
+            if name in existing_names:
                 return None
 
-            mode = result.get("mode", "prompt")
-            code = result.get("code") if mode == "code" else None
-            prompt_text = result.get("prompt") if mode == "prompt" else None
-
-            skill_id = uuid.uuid4().hex[:8]
-            skill_data = {
-                "name": name,
-                "description": description,
-                "prompt": prompt_text or "",
-                "code": code,
-                "parameters": {},
-            }
-            return self.skills.add_custom(skill_id, skill_data)
+            return self.skills.create_package(name, description, body, source="distilled")
         except Exception:
             return None
 

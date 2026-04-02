@@ -65,7 +65,7 @@ class TabClawApp {
   constructor() {
     this.state = {
       tables: [],
-      skills: { builtin: [], custom: [] },
+      skills: { builtin: [], packages: [] },
       memory: {},
       planMode: true,
       codeToolEnabled: false,
@@ -76,7 +76,7 @@ class TabClawApp {
       // Table modal state
       tableModal: { tableId: null, page: 1, totalPages: 1 },
       // Skill edit state
-      skillEdit: null,   // null = adding new, string = id of skill being edited
+      skillEdit: null,
       // Memory edit state
       memoryEdit: null,  // null = adding new, {category, key} = editing existing
       // Demo state
@@ -1210,7 +1210,7 @@ class TabClawApp {
 
   _renderSkills() {
     const list = document.getElementById('skills-list');
-    const { builtin, custom, packages } = this.state.skills;
+    const { builtin, packages } = this.state.skills;
     let html = '<div class="skill-section-title">Built-in Skills</div>';
     html += (builtin || []).map(s => `
       <div class="skill-item skill-item-clickable" onclick="app.showBuiltinSkillDetail('${this._esc(s.name)}')">
@@ -1223,73 +1223,38 @@ class TabClawApp {
         <button class="btn icon-only sm skill-info-btn" title="View details" onclick="event.stopPropagation();app.showBuiltinSkillDetail('${this._esc(s.name)}')">ℹ</button>
       </div>`).join('');
 
-    // Package (instruction) skills — ClawdHub-compatible
+    // Package skills — ClawdHub / OpenClaw-compatible SKILL.md format
     html += '<hr class="divider"><div class="skill-section-title">Package Skills</div>';
     if (!packages || !packages.length) {
-      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip skill.</div>';
+      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip or <b>+ Add</b> to create one.</div>';
     } else {
-      html += packages.map(s => `
+      html += packages.map(s => {
+        const sourceLabel = s.source === 'distilled'
+          ? '<span class="skill-badge-distilled" title="Auto-learned from session">🧠</span>'
+          : '';
+        return `
         <div class="skill-item${s.enabled ? '' : ' skill-disabled'}">
           <span class="skill-dot package"></span>
           <div class="skill-info">
-            <div class="skill-name">${this._esc(s.name)}${s.version ? ` <span class="skill-version">v${this._esc(s.version)}</span>` : ''}</div>
+            <div class="skill-name">${sourceLabel}${this._esc(s.name)}${s.version ? ` <span class="skill-version">v${this._esc(s.version)}</span>` : ''}</div>
             <div class="skill-desc">${this._esc(s.description)}</div>
           </div>
           <div class="skill-actions">
             <button class="btn icon-only sm" title="${s.enabled ? 'Disable' : 'Enable'}" onclick="app._togglePackageSkill('${this._esc(s.slug)}', ${!s.enabled})">${s.enabled ? '⏸' : '▶'}</button>
             <button class="btn icon-only sm danger" onclick="app._deletePackageSkill('${this._esc(s.slug)}')">🗑</button>
           </div>
-        </div>`).join('');
-    }
-
-    html += '<hr class="divider"><div class="skill-section-title">Custom Skills</div>';
-    if (!custom || !custom.length) {
-      html += '<div class="empty-state">No custom skills yet.</div>';
-    } else {
-      html += custom.map(s => `
-        <div class="skill-item">
-          <span class="skill-dot custom"></span>
-          <div class="skill-info">
-            <div class="skill-name">${this._esc(s.name)}</div>
-            <div class="skill-desc">${this._esc(s.description)}</div>
-          </div>
-          <div class="skill-actions">
-            <button class="btn icon-only sm" onclick="app.showSkillModal('${s.id}')">✏</button>
-            <button class="btn icon-only sm danger" onclick="app._deleteSkill('${s.id}')">🗑</button>
-          </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     list.innerHTML = html;
   }
 
-  showSkillModal(skillId) {
-    this.state.skillEdit = skillId || null;
-    document.getElementById('skill-modal-title').textContent = skillId ? 'Edit Skill' : 'Add Custom Skill';
-    if (skillId) {
-      const skill = (this.state.skills.custom || []).find(s => s.id === skillId);
-      if (skill) {
-        document.getElementById('skill-name-input').value = skill.name;
-        document.getElementById('skill-desc-input').value = skill.description;
-        document.getElementById('skill-prompt-input').value = skill.prompt || '';
-        document.getElementById('skill-code-input').value = skill.code || '';
-        this._switchSkillMode(skill.code ? 'code' : 'prompt');
-      }
-    } else {
-      document.getElementById('skill-name-input').value = '';
-      document.getElementById('skill-desc-input').value = '';
-      document.getElementById('skill-prompt-input').value = '';
-      document.getElementById('skill-code-input').value = '';
-      this._switchSkillMode('prompt');
-    }
+  showSkillModal() {
+    document.getElementById('skill-modal-title').textContent = 'Add Skill';
+    document.getElementById('skill-name-input').value = '';
+    document.getElementById('skill-desc-input').value = '';
+    document.getElementById('skill-body-input').value = '';
     document.getElementById('skill-modal').classList.remove('hidden');
-  }
-
-  _switchSkillMode(mode) {
-    const isCode = mode === 'code';
-    document.getElementById('skill-panel-prompt').classList.toggle('hidden', isCode);
-    document.getElementById('skill-panel-code').classList.toggle('hidden', !isCode);
-    document.getElementById('skill-tab-prompt').classList.toggle('active', !isCode);
-    document.getElementById('skill-tab-code').classList.toggle('active', isCode);
   }
 
   hideSkillModal() {
@@ -1334,14 +1299,13 @@ class TabClawApp {
       <div class="skill-detail-section-title">Parameters</div>
       ${paramsHtml}`;
 
-    // "Use as Template" pre-fills the Add Custom Skill form (prompt mode)
+    // "Use as Template" pre-fills the Add Skill form
     document.getElementById('skill-detail-use-btn').onclick = () => {
       this.hideSkillDetailModal();
-      this.showSkillModal(null);
+      this.showSkillModal();
       document.getElementById('skill-desc-input').value = skill.description;
-      this._switchSkillMode('prompt');
-      document.getElementById('skill-prompt-input').value =
-        `Invoke the built-in skill "${skill.name}" to: ${skill.description}\n\nCustomize this prompt to add pre/post-processing logic or combine with other steps.`;
+      document.getElementById('skill-body-input').value =
+        `## Pattern: ${skill.name}\n\nWhen asked to ${skill.description.toLowerCase()}:\n\n1. Call \`table_info\` to inspect the table structure\n2. Use \`${skill.name}\` with the appropriate parameters\n3. Summarise the result clearly\n\nCustomize these steps to combine with other built-in skills or add pre/post-processing logic.`;
     };
 
     document.getElementById('skill-detail-modal').classList.remove('hidden');
@@ -1354,41 +1318,24 @@ class TabClawApp {
   async _saveSkill() {
     const name = document.getElementById('skill-name-input').value.trim();
     const description = document.getElementById('skill-desc-input').value.trim();
-    const codeMode = !document.getElementById('skill-panel-code').classList.contains('hidden');
-    const prompt = document.getElementById('skill-prompt-input').value.trim();
-    const code = document.getElementById('skill-code-input').value.trim();
+    const body = document.getElementById('skill-body-input').value.trim();
     if (!name || !description) { this._notify('Name and description are required', 'error'); return; }
-    if (codeMode && !code) { this._notify('Python code is required in code mode', 'error'); return; }
-    if (!codeMode && !prompt) { this._notify('Prompt is required in prompt mode', 'error'); return; }
+    if (!body) { this._notify('Instructions body is required', 'error'); return; }
     try {
-      const body = { name, description, prompt: codeMode ? '' : prompt, code: codeMode ? code : null };
-      if (this.state.skillEdit) {
-        await this._api('PUT', `/api/skills/${this.state.skillEdit}`, body);
-        this._notify('Skill updated', 'success');
-      } else {
-        await this._api('POST', '/api/skills', body);
-        this._notify('Skill added', 'success');
-      }
+      await this._api('POST', '/api/skills/create', { name, description, body });
+      this._notify('Skill created', 'success');
       this.hideSkillModal();
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
   }
 
-  async _deleteSkill(skillId) {
-    try {
-      await this._api('DELETE', `/api/skills/${skillId}`);
-      this._notify('Skill deleted', 'success');
-      await this._loadSkills();
-    } catch (e) { this._notify(e.message, 'error'); }
-  }
-
   async _clearAllSkills() {
-    const custom = this.state.skills.custom || [];
-    if (!custom.length) { this._notify('No custom skills to clear', 'info'); return; }
-    if (!confirm(`清空全部 ${custom.length} 个自定义 Skill？此操作不可撤销。`)) return;
+    const packages = this.state.skills.packages || [];
+    if (!packages.length) { this._notify('No package skills to clear', 'info'); return; }
+    if (!confirm(`清空全部 ${packages.length} 个 Skill？此操作不可撤销。`)) return;
     try {
       await this._api('DELETE', '/api/skills');
-      this._notify('All custom skills cleared', 'success');
+      this._notify('All skills cleared', 'success');
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
   }
@@ -1862,8 +1809,6 @@ class TabClawApp {
   _appendSkillLearnedBadge(msgId, skill) {
     const body = document.getElementById(`${msgId}-body`);
     if (!body) return;
-    const mode = skill.code ? 'code' : 'prompt';
-    const modeLabel = skill.code ? '⚙ code' : '📝 prompt';
     const div = document.createElement('div');
     div.className = 'skill-learned-badge';
     div.innerHTML = `
@@ -1872,7 +1817,7 @@ class TabClawApp {
         从本次推理中抽象出新 Skill：<strong>${this._esc(skill.name)}</strong>
         — ${this._esc(skill.description)}
       </span>
-      <span class="skill-learned-mode">${modeLabel}</span>`;
+      <span class="skill-learned-mode">📦 package</span>`;
     body.appendChild(div);
     this._scrollChat();
     this._notify(`New skill learned: ${skill.name}`, 'success');

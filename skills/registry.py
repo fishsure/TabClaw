@@ -1,7 +1,7 @@
 """Skill registry — manages built-in and package (SKILL.md) skills.
 
 All user-created and auto-distilled skills are stored as SKILL.md packages
-in data/skills/<slug>/, compatible with the OpenClaw/ClawdHub format.
+in data/skills/<slug>/, compatible with the OpenClaw/ClawHub format.
 """
 import json
 import re
@@ -400,7 +400,7 @@ class SkillRegistry:
         self._packages: List[Dict] = self._load_packages()
 
     # ------------------------------------------------------------------
-    # Package (instruction) skills — ClawdHub / OpenClaw compatible
+    # Package (instruction) skills — ClawHub / OpenClaw compatible
     # ------------------------------------------------------------------
 
     def _load_packages(self) -> List[Dict]:
@@ -478,7 +478,7 @@ description: "{description}"
         return pkg or {"slug": slug, "name": name, "description": description, "status": "created"}
 
     def install_from_zip(self, zip_bytes: bytes) -> Dict:
-        """Extract a ClawdHub skill zip into data/skills/<slug>/."""
+        """Extract a ClawHub skill zip into data/skills/<slug>/."""
         SKILLS_DIR.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
             names = zf.namelist()

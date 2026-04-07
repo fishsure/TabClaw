@@ -1223,7 +1223,7 @@ class TabClawApp {
         <button class="btn icon-only sm skill-info-btn" title="View details" onclick="event.stopPropagation();app.showBuiltinSkillDetail('${this._esc(s.name)}')">ℹ</button>
       </div>`).join('');
 
-    // Package skills — ClawdHub / OpenClaw-compatible SKILL.md format
+    // Package skills — ClawHub / OpenClaw-compatible SKILL.md format
     html += '<hr class="divider"><div class="skill-section-title">Package Skills</div>';
     if (!packages || !packages.length) {
       html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip or <b>+ Add</b> to create one.</div>';

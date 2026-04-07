@@ -1,4 +1,4 @@
-"""Hook runner — discover and execute OpenClaw/ClawdHub-compatible hook scripts.
+"""Hook runner — discover and execute OpenClaw/ClawHub-compatible hook scripts.
 
 Supports two hook formats:
   1. scripts/activator.sh      → fires on every user prompt (UserPromptSubmit)

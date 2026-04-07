@@ -346,7 +346,7 @@ async def clear_skills():
     return skill_registry.clear_packages()
 
 
-# Package (instruction) skills — ClawdHub / OpenClaw-compatible
+# Package (instruction) skills — ClawHub / OpenClaw-compatible
 @app.post("/api/skills/import")
 async def import_skill_package(file: UploadFile = File(...)):
     if not (file.filename or "").endswith(".zip"):

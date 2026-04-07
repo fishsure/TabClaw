@@ -29,7 +29,7 @@ Drop in a CSV or Excel file and describe what you want. TabClaw shows you its pl
 
 ## 🗞️ News
 
-- **[2026-04-02]** **ClawdHub-compatible package skills:** skills distributed as a `SKILL.md` archive (e.g. from [ClawdHub](https://clawdhub.com)) can be installed directly — open the **Skills** sidebar and use **📦 Import** to upload a `.zip`. The skill body is injected into the agent’s system prompt; enable or disable each package from the list.
+- **[2026-04-02]** **ClawHub-compatible package skills:** skills distributed as a `SKILL.md` archive (e.g. from [ClawHub](https://clawdhub.com)) can be installed directly — open the **Skills** sidebar and use **📦 Import** to upload a `.zip`. The skill body is injected into the agent’s system prompt; enable or disable each package from the list.
 - **[2026-03-19]** TabClaw is now open-source! Code and docs are publicly available on GitHub.
 
 ---

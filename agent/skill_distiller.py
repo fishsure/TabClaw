@@ -3,7 +3,7 @@ SkillDistiller: after a task completes, review the tool call log and
 try to extract a reusable skill as a SKILL.md package.
 
 Skills are stored as instruction-based SKILL.md files in data/skills/<slug>/,
-compatible with the OpenClaw/ClawdHub format. The skill body describes
+compatible with the OpenClaw/ClawHub format. The skill body describes
 a behavioral pattern and guides the agent to use existing built-in tools.
 
 Triggered only when >= MIN_TOOL_CALLS tool calls were made — trivial

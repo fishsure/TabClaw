@@ -13,4 +13,4 @@ echo "Open http://localhost:8000 in your browser"
 echo "(Press Ctrl+C to stop)"
 echo ""
 
-python3 -m uvicorn app:app --host 0.0.0.0 --port 8009 --reload
+python3 -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload

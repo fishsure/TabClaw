@@ -108,7 +108,7 @@ class TabClawApp {
     this._loadSkills();
     this._loadMemory();
     this._autoresize(document.getElementById('message-input'));
-    if (this._lang === 'zh') this._applyLangLabels();
+    this._applyLangLabels();
   }
 
   _bindEvents() {
@@ -206,7 +206,7 @@ class TabClawApp {
     });
 
     // Close modals on overlay click
-    const allModals = ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal', 'guide-modal'];
+    const allModals = ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal', 'guide-modal', 'features-guide-modal'];
     allModals.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('click', e => {
@@ -241,6 +241,7 @@ class TabClawApp {
     else if (id === 'growth-modal') this.hideGrowthModal();
     else if (id === 'pkg-detail-modal') this.hidePkgDetailModal();
     else if (id === 'guide-modal') this.hideGuideModal();
+    else if (id === 'features-guide-modal') this.hideFeaturesGuideModal();
   }
 
   _autoresize(textarea) {
@@ -264,9 +265,18 @@ class TabClawApp {
       btn.innerHTML = isLight
         ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
         : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
-      btn.title = isLight ? '切换夜间模式' : '切换日间模式';
+      this._refreshThemeButtonTitle(isLight);
     }
     localStorage.setItem('theme', theme);
+  }
+
+  _refreshThemeButtonTitle(isLight) {
+    const btn = document.getElementById('theme-btn');
+    if (!btn) return;
+    const zh = this._lang === 'zh';
+    btn.title = zh
+      ? (isLight ? '切换夜间模式' : '切换日间模式')
+      : (isLight ? 'Switch to dark mode' : 'Switch to light mode');
   }
 
   _toggleTheme() {
@@ -278,6 +288,59 @@ class TabClawApp {
     this._lang = this._lang === 'en' ? 'zh' : 'en';
     localStorage.setItem('lang', this._lang);
     this._applyLangLabels();
+    const growthOpen = document.getElementById('growth-modal');
+    if (growthOpen && !growthOpen.classList.contains('hidden')) this.showGrowthDashboard();
+    const demoModal = document.getElementById('demo-modal');
+    if (demoModal && !demoModal.classList.contains('hidden')) this._renderDemoScenarios();
+  }
+
+  /** Self-evolution guide body (replaces #guide-content). */
+  _selfEvolutionGuideInnerHtml() {
+    const zh = this._lang === 'zh';
+    const steps = zh
+      ? [
+        { t: '📊 上传表格，提出问题', d: '上传 CSV 或 Excel 文件，用自然语言描述你想要的分析。TabClaw 会制定计划、调用工具、给出结论。' },
+        { t: '👍👎 给出反馈', d: '每次分析完成后，点击 <strong>👍</strong> 或 <strong>👎</strong> 告诉 TabClaw 效果如何。这是它学习的核心信号——不满意的结果会驱动改进。' },
+        { t: '🧠 自动学习技能', d: '开启底部的 <strong>Skill Learning</strong> 开关后，TabClaw 会从复杂任务中自动提炼可复用的分析技能。你也可以点击 Skills 面板的 <strong>🔍</strong> 按钮，主动扫描历史记录发现重复模式并采纳为技能。' },
+        { t: '⬆ 反馈驱动进化', d: '当某个技能累计收到 <strong>2 次以上 👎</strong> 时，TabClaw 会自动分析失败原因并升级该技能。技能版本号递增，旧版本保留。你也可以在技能详情里手动点 <strong>⬆ Improve</strong> 触发改进。' },
+        { t: '📈 越来越好', d: '下次问类似问题时，进化后的技能会自动注入 Agent 的思维链，让分析更准确、更有条理。点击侧边栏 <strong>成长报告</strong> 查看领域熟练度、效率变化和里程碑。' },
+      ]
+      : [
+        { t: '📊 Upload tables and ask questions', d: 'Upload CSV or Excel, describe what you want in plain language. TabClaw plans, calls tools, and answers.' },
+        { t: '👍👎 Give feedback', d: 'After each reply, use <strong>👍</strong> or <strong>👎</strong>. This is the main learning signal—bad outcomes drive fixes.' },
+        { t: '🧠 Skill learning', d: 'Turn on <strong>Skill Learning</strong> below to distil reusable skills from harder tasks. Or use <strong>🔍</strong> in Skills to scan history and adopt patterns as skills.' },
+        { t: '⬆ Feedback-driven upgrades', d: 'After <strong>two or more 👎</strong> on a skill, TabClaw analyses failures and upgrades it (version bumps; old versions kept). You can also click <strong>⬆ Improve</strong> in skill details.' },
+        { t: '📈 Keeps improving', d: 'On similar questions later, upgraded skills feed the agent. Open <strong>Growth report</strong> in the sidebar for domains, efficiency, and milestones.' },
+      ];
+    const tipsTitle = zh ? '💡 快速上手建议' : '💡 Quick tips';
+    const tips = zh
+      ? [
+        '<strong>多给反馈</strong>——👍👎 是 TabClaw 进化的燃料',
+        '<strong>开启 Skill Learning</strong>——让系统自动从每次分析中学习',
+        '<strong>定期点 🔍 发现技能</strong>——从历史中挖掘你还没注意到的分析模式',
+        '<strong>查看成长报告</strong>——观察 TabClaw 在各个领域的进步',
+      ]
+      : [
+        '<strong>Give feedback often</strong> — 👍👎 is the fuel for improvement.',
+        '<strong>Enable Skill Learning</strong> so the system learns from each task.',
+        '<strong>Use 🔍 Discover</strong> to turn recurring patterns into skills.',
+        '<strong>Open Growth report</strong> to see progress by domain.',
+      ];
+    const flow = steps.map((s, i) => `
+      ${i ? '<div class="guide-arrow">↓</div>' : ''}
+      <div class="guide-step">
+        <div class="guide-step-num">${i + 1}</div>
+        <div class="guide-step-body">
+          <div class="guide-step-title">${s.t}</div>
+          <div class="guide-step-desc">${s.d}</div>
+        </div>
+      </div>`).join('');
+    const tipsUl = tips.map(li => `<li>${li}</li>`).join('');
+    return `<div class="guide-flow">${flow}</div>
+      <div class="guide-tips">
+        <div class="guide-tips-title">${tipsTitle}</div>
+        <ul>${tipsUl}</ul>
+      </div>`;
   }
 
   _applyLangLabels() {
@@ -331,6 +394,8 @@ class TabClawApp {
     if (tablesTitle) tablesTitle.textContent = zh ? '数据表' : 'Tables';
     const newTableBtn = document.getElementById('new-table-btn');
     if (newTableBtn) newTableBtn.textContent = zh ? '+ 新建空白表格' : '+ New blank table';
+    document.getElementById('compact-chat-btn')?.setAttribute('title', zh ? '将长对话压缩为一条摘要' : 'Compact chat history into a summary');
+    document.getElementById('clear-chat-btn')?.setAttribute('title', zh ? '清空聊天记录' : 'Clear chat history');
     const chatEmptyDesc = document.getElementById('chat-empty-desc');
     if (chatEmptyDesc) {
       chatEmptyDesc.textContent = zh
@@ -342,6 +407,88 @@ class TabClawApp {
     if (labCredit) labCredit.textContent = zh
       ? '中国科学技术大学认知智能全国重点实验室 AGI 组'
       : 'State Key Laboratory of Cognitive Intelligence, USTC · AGI Group';
+    const guideHelpLbl = document.getElementById('guide-help-btn-label');
+    if (guideHelpLbl) guideHelpLbl.textContent = zh ? '❓ 使用指南' : '❓ User guide';
+    const featBtnLbl = document.getElementById('features-guide-btn-label');
+    if (featBtnLbl) featBtnLbl.textContent = zh ? '📖 功能一览' : '📖 Features';
+    document.getElementById('guide-help-btn')?.setAttribute('title', zh ? '了解 TabClaw 如何自我进化' : 'How TabClaw learns from feedback');
+    document.getElementById('features-guide-btn')?.setAttribute('title', zh ? '界面里有哪些功能' : 'What each part of the UI does');
+    const tipEvo = document.getElementById('chat-empty-tip-evolution-text');
+    if (tipEvo) {
+      tipEvo.textContent = zh
+        ? 'TabClaw 越用越聪明 — 点这里了解自进化机制'
+        : 'TabClaw learns as you use it — tap for how self-evolution works';
+    }
+    const tipFeat = document.getElementById('chat-empty-tip-features-text');
+    if (tipFeat) {
+      tipFeat.textContent = zh
+        ? '界面功能说明：Compact、技能、记忆…点这里'
+        : 'Feature overview: Compact, skills, memory… tap here';
+    }
+    const fgTitle = document.getElementById('features-guide-title');
+    if (fgTitle) fgTitle.textContent = zh ? '功能一览' : 'Feature overview';
+    const fgSub = document.getElementById('features-guide-subtitle');
+    if (fgSub) fgSub.textContent = zh ? '各按钮与开关在做什么' : 'What each control does';
+    const fgClose = document.getElementById('features-guide-close-btn');
+    if (fgClose) fgClose.textContent = zh ? '知道了' : 'Got it';
+
+    document.getElementById('lang-btn')?.setAttribute('title', zh ? '切换到英文界面' : 'Switch to Chinese');
+    const demoLbl = document.getElementById('demo-btn-label');
+    if (demoLbl) demoLbl.textContent = zh ? '一键体验' : 'Try a demo';
+    document.getElementById('demo-btn')?.setAttribute('title', zh ? '一键体验示例场景' : 'Load sample data and suggested questions');
+    const growthLbl = document.getElementById('growth-btn-label');
+    if (growthLbl) growthLbl.textContent = zh ? '成长报告' : 'Growth report';
+    document.getElementById('growth-btn')?.setAttribute('title', zh ? '查看 TabClaw 的成长轨迹' : 'View learning progress and milestones');
+    const dsLbl = document.getElementById('discover-skill-btn-label');
+    if (dsLbl) dsLbl.textContent = zh ? '🔍 从历史中发现技能' : '🔍 Discover skills from history';
+    document.getElementById('discover-skill-btn')?.setAttribute('title', zh ? '从历史分析中发现重复模式并提炼为可复用技能' : 'Find recurring patterns in past chats and turn them into skills');
+    const dcp = document.getElementById('demo-control-prefix');
+    if (dcp) dcp.textContent = zh ? '演示进行中：' : 'Demo running:';
+    const demoStop = document.getElementById('demo-stop-btn');
+    if (demoStop) demoStop.textContent = zh ? '⏹ 停止演示' : '⏹ Stop demo';
+    const dmt = document.getElementById('demo-modal-title');
+    if (dmt) dmt.textContent = zh ? '🎯 一键体验' : '🎯 Try a demo';
+    const dms = document.getElementById('demo-modal-subtitle');
+    if (dms) dms.textContent = zh ? '选择一个场景，系统自动加载数据并逐步执行完整分析流程' : 'Pick a scenario — sample data loads and analyses run step by step';
+    const gmht = document.getElementById('growth-modal-header-title');
+    if (gmht) gmht.textContent = zh ? '📈 TabClaw 成长报告' : '📈 Growth report';
+    const gmhss = document.getElementById('growth-modal-header-subtitle');
+    if (gmhss) gmhss.textContent = zh ? '越用越聪明 — 查看 TabClaw 的学习轨迹与能力演进' : 'Learning trajectory and how TabClaw improves over time';
+    const gmcb = document.getElementById('growth-modal-close-btn');
+    if (gmcb) gmcb.textContent = zh ? '关闭' : 'Close';
+    const msmt = document.getElementById('memory-summary-modal-title');
+    if (msmt) msmt.textContent = zh ? '👤 用户偏好概览' : '👤 Preference overview';
+    const msload = document.getElementById('memory-summary-loading-text');
+    if (msload) msload.textContent = zh ? '正在整理中…' : 'Organizing…';
+    const msclose = document.getElementById('memory-summary-close-btn');
+    if (msclose) msclose.textContent = zh ? '关闭' : 'Close';
+    const msrefresh = document.getElementById('memory-summary-refresh-btn');
+    if (msrefresh) msrefresh.textContent = zh ? '↻ 重新生成' : '↻ Regenerate';
+    const mscopy = document.getElementById('memory-summary-copy-btn');
+    if (mscopy) mscopy.textContent = zh ? '📋 复制' : '📋 Copy';
+    const gmh = document.getElementById('guide-modal-header-title');
+    if (gmh) gmh.textContent = zh ? '🧬 TabClaw 如何越用越聪明' : '🧬 How TabClaw gets smarter over time';
+    const gmhs = document.getElementById('guide-modal-header-subtitle');
+    if (gmhs) gmhs.textContent = zh ? '了解自进化流程，让 TabClaw 成为你的专属数据分析师' : 'Self-evolution: feedback, skills, and growth';
+    const gc = document.getElementById('guide-content');
+    if (gc) gc.innerHTML = this._selfEvolutionGuideInnerHtml();
+    const gdont = document.getElementById('guide-footer-dont-show-label');
+    if (gdont) gdont.textContent = zh ? '下次不再自动显示' : "Don't show again on startup";
+    const guideStart = document.getElementById('guide-start-btn');
+    if (guideStart) guideStart.textContent = zh ? '开始使用' : 'Get started';
+    const skillsHead = document.getElementById('skills-panel-header-title');
+    if (skillsHead) skillsHead.textContent = zh ? '技能' : 'Skills';
+    const memHead = document.getElementById('memory-panel-header-title');
+    if (memHead) memHead.textContent = zh ? '记忆' : 'Memory';
+
+    const isLight = document.documentElement.classList.contains('light');
+    this._refreshThemeButtonTitle(isLight);
+
+    const fgm = document.getElementById('features-guide-modal');
+    if (fgm && !fgm.classList.contains('hidden')) {
+      const fb = document.getElementById('features-guide-body');
+      if (fb) fb.innerHTML = this._featuresGuideHtml();
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -1332,6 +1479,12 @@ class TabClawApp {
             <div class="chip" onclick="app.insertSuggestion(this)">Merge tables on a common column</div>
             <div class="chip" onclick="app.insertSuggestion(this)">Show top 10 rows sorted by first numeric column</div>
           </div>
+          <div class="chat-empty-tip" id="chat-empty-tip-evolution" onclick="app.showGuideModal()">
+            <span>🧬</span> <span id="chat-empty-tip-evolution-text">TabClaw learns as you use it — tap for how self-evolution works</span>
+          </div>
+          <div class="chat-empty-tip chat-empty-tip-secondary" id="chat-empty-tip-features" onclick="app.showFeaturesGuideModal()">
+            <span>📖</span> <span id="chat-empty-tip-features-text">Feature overview: Compact, skills, memory… tap here</span>
+          </div>
         </div>`;
       this._applyLangLabels();
       this._notify('Chat history cleared', 'success');
@@ -1891,10 +2044,11 @@ class TabClawApp {
     const copyBtn = document.getElementById('memory-summary-copy-btn');
     const refreshBtn = document.getElementById('memory-summary-refresh-btn');
 
+    const zh = this._lang === 'zh';
     // Open modal and show loading state
     content.innerHTML = '';
     loading.classList.remove('hidden');
-    subtitle.textContent = '由 AI 根据当前记忆整理生成';
+    subtitle.textContent = zh ? '由 AI 根据当前记忆整理生成' : 'Generated from your saved memory';
     modal.classList.remove('hidden');
 
     const doGenerate = async () => {
@@ -1905,9 +2059,9 @@ class TabClawApp {
         this._summaryText = result.summary || '';
         content.innerHTML = this._renderMarkdown(this._summaryText);
         const now = new Date().toLocaleTimeString();
-        subtitle.textContent = `生成于 ${now}`;
+        subtitle.textContent = zh ? `生成于 ${now}` : `Generated at ${now}`;
       } catch (e) {
-        content.innerHTML = `<span style="color:var(--red)">生成失败: ${this._esc(e.message)}</span>`;
+        content.innerHTML = `<span style="color:var(--red)">${zh ? '生成失败' : 'Failed'}: ${this._esc(e.message)}</span>`;
       } finally {
         loading.classList.add('hidden');
       }
@@ -1978,6 +2132,7 @@ class TabClawApp {
   }
 
   _renderDemoScenarios() {
+    const zh = this._lang === 'zh';
     const grid = document.getElementById('demo-scenarios-grid');
     grid.innerHTML = DEMO_SCENARIOS.map(s => `
       <div class="demo-card">
@@ -1985,7 +2140,7 @@ class TabClawApp {
           <span class="demo-card-icon">${s.icon}</span>
           <div>
             <div class="demo-card-title">${this._esc(s.title)}</div>
-            <div class="demo-card-steps-count">${s.queries.length} 个分析步骤</div>
+            <div class="demo-card-steps-count">${s.queries.length} ${zh ? '个分析步骤' : 'analysis steps'}</div>
           </div>
         </div>
         <div class="demo-card-desc">${this._esc(s.description)}</div>
@@ -1994,14 +2149,14 @@ class TabClawApp {
         </div>
         <ul class="demo-card-steps-list">
           ${s.queries.slice(0, 2).map(q => `<li>${this._esc(q.slice(0, 58))}${q.length > 58 ? '…' : ''}</li>`).join('')}
-          ${s.queries.length > 2 ? `<li class="more-steps">+ ${s.queries.length - 2} 更多步骤…</li>` : ''}
+          ${s.queries.length > 2 ? `<li class="more-steps">+ ${s.queries.length - 2} ${zh ? '更多步骤…' : 'more steps…'}</li>` : ''}
         </ul>
         <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px"
                 onclick="app.runDemo('${s.id}')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
-          开始演示
+          ${zh ? '开始演示' : 'Start demo'}
         </button>
       </div>`).join('');
   }
@@ -2009,6 +2164,7 @@ class TabClawApp {
   async runDemo(scenarioId) {
     const scenario = DEMO_SCENARIOS.find(s => s.id === scenarioId);
     if (!scenario) return;
+    const zh = this._lang === 'zh';
 
     this.hideDemoModal();
     this.state.demoRunning = true;
@@ -2019,17 +2175,19 @@ class TabClawApp {
     document.getElementById('demo-control').classList.remove('hidden');
 
     // 1. Load example files
-    this._appendSystemMessage(`⏳ 正在加载示例数据：${scenario.files.join('、')}…`);
+    this._appendSystemMessage(`⏳ ${zh ? '正在加载示例数据：' : 'Loading sample data: '}${scenario.files.join(zh ? '、' : ', ')}…`);
     try {
       const result = await this._api('POST', '/api/demo/load', {
         files: scenario.files,
         clear: true,
       });
       await this._loadTables();
-      const names = result.loaded.map(t => `${t.name}（${t.rows} 行 × ${t.cols} 列）`).join('，');
-      this._appendSystemMessage(`✓ 数据加载完成：${names}`);
+      const names = result.loaded.map(t =>
+        zh ? `${t.name}（${t.rows} 行 × ${t.cols} 列）` : `${t.name} (${t.rows} × ${t.cols})`
+      ).join(zh ? '，' : ', ');
+      this._appendSystemMessage(`✓ ${zh ? '数据加载完成：' : 'Data loaded: '}${names}`);
     } catch (e) {
-      this._appendSystemMessage(`✗ 数据加载失败：${e.message}`);
+      this._appendSystemMessage(`✗ ${zh ? '数据加载失败：' : 'Load failed: '}${e.message}`);
       this._demoCleanup();
       return;
     }
@@ -2045,7 +2203,7 @@ class TabClawApp {
 
       // Update progress
       document.getElementById('demo-control-step').textContent =
-        `· 步骤 ${i + 1} / ${scenario.queries.length}`;
+        `· ${zh ? '步骤' : 'Step'} ${i + 1} / ${scenario.queries.length}`;
 
       // Divider in chat
       this._appendDemoStepDivider(i + 1, scenario.queries.length, scenario.queries[i]);
@@ -2070,10 +2228,12 @@ class TabClawApp {
 
     if (finished) {
       this._appendSystemMessage(
-        `🎉 演示完成！「${scenario.title}」共执行 ${scenario.queries.length} 个分析步骤。`
+        zh
+          ? `🎉 演示完成！「${scenario.title}」共执行 ${scenario.queries.length} 个分析步骤。`
+          : `🎉 Demo finished: "${scenario.title}" — ${scenario.queries.length} analysis steps.`
       );
     } else {
-      this._appendSystemMessage('⏹ 演示已停止。');
+      this._appendSystemMessage(zh ? '⏹ 演示已停止。' : '⏹ Demo stopped.');
     }
   }
 
@@ -2088,12 +2248,13 @@ class TabClawApp {
 
   /** Insert a visual step divider between demo queries. */
   _appendDemoStepDivider(stepNum, total, queryText) {
+    const zh = this._lang === 'zh';
     const el = document.createElement('div');
     el.className = 'demo-step-divider';
     const shortQ = queryText.length > 50 ? queryText.slice(0, 50) + '…' : queryText;
     el.innerHTML = `
       <div class="demo-step-line"></div>
-      <span class="demo-step-label">步骤 ${stepNum} / ${total}</span>
+      <span class="demo-step-label">${zh ? '步骤' : 'Step'} ${stepNum} / ${total}</span>
       <div class="demo-step-line"></div>`;
     this._chatContainer().appendChild(el);
     this._scrollChat();
@@ -2279,10 +2440,12 @@ class TabClawApp {
     const content = document.getElementById('growth-content');
     if (!modal || !content) return;
 
-    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div>';
+    const zh0 = this._lang === 'zh';
+    content.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted)">${zh0 ? '加载中…' : 'Loading…'}</div>`;
     modal.classList.remove('hidden');
 
     try {
+      const zh = this._lang === 'zh';
       const p = await this._api('GET', '/api/growth/profile');
       const rate = p.satisfaction_rate !== null ? `${Math.round(p.satisfaction_rate * 100)}%` : '—';
       const skillStats = (p.skills_stats || []);
@@ -2304,23 +2467,23 @@ class TabClawApp {
       if (domains.length) {
         domainHtml = `<div class="growth-section">
           <div class="growth-section-title">
-            领域熟练度
-            <button class="btn sm" style="margin-left:auto;font-size:10px" onclick="app._showAddDomainForm()">+ 自定义领域</button>
+            ${zh ? '领域熟练度' : 'Domain proficiency'}
+            <button class="btn sm" style="margin-left:auto;font-size:10px" onclick="app._showAddDomainForm()">${zh ? '+ 自定义领域' : '+ Custom domain'}</button>
           </div>
           ${domains.map(d => {
             const pct = Math.round(d.proficiency * 100);
             return `<div class="growth-domain-row">
               <span class="growth-domain-name">${this._esc(d.name)}</span>
               <div class="growth-domain-bar"><div class="growth-domain-fill" style="width:${pct}%"></div></div>
-              <span class="growth-domain-meta">${d.sessions} 次 · ${pct}%</span>
+              <span class="growth-domain-meta">${zh ? `${d.sessions} 次 · ${pct}%` : `${d.sessions} sessions · ${pct}%`}</span>
             </div>`;
           }).join('')}
           <div id="add-domain-form" class="add-domain-form hidden">
-            <input type="text" id="add-domain-name" class="form-input sm" placeholder="领域名称，如：医疗健康" />
-            <input type="text" id="add-domain-keywords" class="form-input sm" placeholder="关键词（逗号分隔），如：患者,医疗,诊断" />
+            <input type="text" id="add-domain-name" class="form-input sm" placeholder="${zh ? '领域名称，如：医疗健康' : 'Domain name, e.g. Healthcare'}" />
+            <input type="text" id="add-domain-keywords" class="form-input sm" placeholder="${zh ? '关键词（逗号分隔），如：患者,医疗,诊断' : 'Keywords (comma-separated), e.g. patient,diagnosis'}" />
             <div style="display:flex;gap:6px;justify-content:flex-end">
-              <button class="btn sm" onclick="document.getElementById('add-domain-form').classList.add('hidden')">取消</button>
-              <button class="btn sm primary" onclick="app._submitCustomDomain()">添加</button>
+              <button class="btn sm" onclick="document.getElementById('add-domain-form').classList.add('hidden')">${zh ? '取消' : 'Cancel'}</button>
+              <button class="btn sm primary" onclick="app._submitCustomDomain()">${zh ? '添加' : 'Add'}</button>
             </div>
           </div>
         </div>`;
@@ -2333,13 +2496,17 @@ class TabClawApp {
         const sPct = eff.steps_change_pct;
         const dColor = dPct <= 0 ? 'var(--green)' : 'var(--red)';
         const sColor = sPct <= 0 ? 'var(--green)' : 'var(--red)';
-        const dLabel = dPct <= 0 ? `快了 ${Math.abs(dPct)}%` : `慢了 ${dPct}%`;
-        const sLabel = sPct <= 0 ? `少了 ${Math.abs(sPct)}%` : `多了 ${sPct}%`;
+        const dLabel = zh
+          ? (dPct <= 0 ? `快了 ${Math.abs(dPct)}%` : `慢了 ${dPct}%`)
+          : (dPct <= 0 ? `${Math.abs(dPct)}% faster` : `${dPct}% slower`);
+        const sLabel = zh
+          ? (sPct <= 0 ? `少了 ${Math.abs(sPct)}%` : `多了 ${sPct}%`)
+          : (sPct <= 0 ? `${Math.abs(sPct)}% fewer` : `${sPct}% more`);
         effHtml = `<div class="growth-section">
-          <div class="growth-section-title">效率变化 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（前半 vs 近期）</span></div>
+          <div class="growth-section-title">${zh ? '效率变化' : 'Efficiency'} <span style="font-weight:400;color:var(--text-dim);font-size:11px">${zh ? '（前半 vs 近期）' : '(early vs recent)'}</span></div>
           <div class="growth-eff-grid">
             <div class="growth-eff-card">
-              <div class="growth-eff-label">平均耗时</div>
+              <div class="growth-eff-label">${zh ? '平均耗时' : 'Avg. duration'}</div>
               <div class="growth-eff-vals">
                 <span class="growth-eff-old">${(eff.early_avg_duration_ms / 1000).toFixed(1)}s</span>
                 <span class="growth-eff-arrow">→</span>
@@ -2348,7 +2515,7 @@ class TabClawApp {
               <div class="growth-eff-delta" style="color:${dColor}">${dLabel}</div>
             </div>
             <div class="growth-eff-card">
-              <div class="growth-eff-label">平均步数</div>
+              <div class="growth-eff-label">${zh ? '平均步数' : 'Avg. steps'}</div>
               <div class="growth-eff-vals">
                 <span class="growth-eff-old">${eff.early_avg_steps}</span>
                 <span class="growth-eff-arrow">→</span>
@@ -2364,11 +2531,11 @@ class TabClawApp {
       let skillsHtml = '';
       if (skillStats.length) {
         skillsHtml = `<div class="growth-section">
-          <div class="growth-section-title">已学技能</div>
+          <div class="growth-section-title">${zh ? '已学技能' : 'Learned skills'}</div>
           <div class="growth-skills-list">${skillStats.map(s => `
             <div class="growth-skill-item" style="cursor:pointer" onclick="app.hideGrowthModal();app.showPkgDetailModal('${this._esc(s.slug)}')">
               <span class="growth-skill-name">${this._esc(s.name)}</span>
-              <span class="growth-skill-meta">v${s.version} · 使用 ${s.usage_count} 次 · 👍${s.success_count} 👎${s.failure_count}</span>
+              <span class="growth-skill-meta">v${s.version} · ${zh ? `使用 ${s.usage_count} 次` : `used ${s.usage_count}×`} · 👍${s.success_count} 👎${s.failure_count}</span>
             </div>`).join('')}
           </div>
         </div>`;
@@ -2379,7 +2546,7 @@ class TabClawApp {
       if (topTools.length) {
         const maxCount = topTools[0]?.[1] || 1;
         toolsHtml = `<div class="growth-section">
-          <div class="growth-section-title">工具使用频率</div>
+          <div class="growth-section-title">${zh ? '工具使用频率' : 'Tool usage'}</div>
           <div class="growth-tools-list">${topTools.map(([name, count]) => `
             <div class="growth-tool-bar-row">
               <span class="growth-tool-name">${this._esc(name)}</span>
@@ -2394,7 +2561,7 @@ class TabClawApp {
       let eventsHtml = '';
       if (p.recent_events && p.recent_events.length) {
         eventsHtml = `<div class="growth-section">
-          <div class="growth-section-title">成长时间线</div>
+          <div class="growth-section-title">${zh ? '成长时间线' : 'Timeline'}</div>
           <div class="growth-timeline">${p.recent_events.map(e => `
             <div class="growth-event">
               <span class="growth-event-date">${this._esc(e.date)}</span>
@@ -2410,19 +2577,19 @@ class TabClawApp {
         <div class="growth-stats-grid">
           <div class="growth-stat-card">
             <div class="growth-stat-value">${p.total_sessions}</div>
-            <div class="growth-stat-label">分析会话</div>
+            <div class="growth-stat-label">${zh ? '分析会话' : 'Sessions'}</div>
           </div>
           <div class="growth-stat-card">
             <div class="growth-stat-value">${p.skills_learned}</div>
-            <div class="growth-stat-label">已学技能</div>
+            <div class="growth-stat-label">${zh ? '已学技能' : 'Skills learned'}</div>
           </div>
           <div class="growth-stat-card">
             <div class="growth-stat-value">${p.skill_reuse_count || 0}</div>
-            <div class="growth-stat-label">技能复用</div>
+            <div class="growth-stat-label">${zh ? '技能复用' : 'Skill reuse'}</div>
           </div>
           <div class="growth-stat-card">
             <div class="growth-stat-value">${rate}</div>
-            <div class="growth-stat-label">满意率</div>
+            <div class="growth-stat-label">${zh ? '满意率' : 'Satisfaction'}</div>
           </div>
         </div>
         ${msHtml}
@@ -2433,17 +2600,17 @@ class TabClawApp {
         ${eventsHtml}
         ${isEmpty
           ? `<div class="growth-empty-state">
-              <div class="growth-empty-title">还没有成长数据</div>
+              <div class="growth-empty-title">${zh ? '还没有成长数据' : 'No growth data yet'}</div>
               <div class="growth-empty-flow">
-                <div class="growth-empty-step">📊 上传表格提问</div>
+                <div class="growth-empty-step">${zh ? '📊 上传表格提问' : '📊 Upload & ask'}</div>
                 <div class="growth-empty-arrow">→</div>
-                <div class="growth-empty-step">👍👎 给出反馈</div>
+                <div class="growth-empty-step">${zh ? '👍👎 给出反馈' : '👍👎 Feedback'}</div>
                 <div class="growth-empty-arrow">→</div>
-                <div class="growth-empty-step">🧠 自动学习技能</div>
+                <div class="growth-empty-step">${zh ? '🧠 自动学习技能' : '🧠 Skills learn'}</div>
                 <div class="growth-empty-arrow">→</div>
-                <div class="growth-empty-step">📈 越来越准</div>
+                <div class="growth-empty-step">${zh ? '📈 越来越准' : '📈 Gets better'}</div>
               </div>
-              <div class="growth-empty-hint">开始使用 TabClaw 后，这里会展示领域熟练度、效率变化和学习里程碑。</div>
+              <div class="growth-empty-hint">${zh ? '开始使用 TabClaw 后，这里会展示领域熟练度、效率变化和学习里程碑。' : 'After you use TabClaw, domain proficiency, efficiency, and milestones appear here.'}</div>
             </div>`
           : ''}`;
     } catch (e) {
@@ -2462,16 +2629,17 @@ class TabClawApp {
   }
 
   async _submitCustomDomain() {
+    const zh = this._lang === 'zh';
     const nameEl = document.getElementById('add-domain-name');
     const kwEl = document.getElementById('add-domain-keywords');
     const name = (nameEl?.value || '').trim();
     const kwStr = (kwEl?.value || '').trim();
-    if (!name || !kwStr) { this._notify('请填写领域名称和关键词', 'error'); return; }
+    if (!name || !kwStr) { this._notify(zh ? '请填写领域名称和关键词' : 'Enter domain name and keywords', 'error'); return; }
     const keywords = kwStr.split(/[,，、\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
-    if (keywords.length === 0) { this._notify('请至少填写一个关键词', 'error'); return; }
+    if (keywords.length === 0) { this._notify(zh ? '请至少填写一个关键词' : 'Enter at least one keyword', 'error'); return; }
     try {
       await this._api('POST', '/api/growth/domains', { name, keywords });
-      this._notify(`领域「${name}」已添加，新的会话将自动归类`, 'success');
+      this._notify(zh ? `领域「${name}」已添加，新的会话将自动归类` : `Domain "${name}" added — new sessions will be classified`, 'success');
       this.hideGrowthModal();
       setTimeout(() => this.showGrowthDashboard(), 300);
     } catch (e) {
@@ -2480,8 +2648,101 @@ class TabClawApp {
   }
 
   // -----------------------------------------------------------------------
-  // Guide modal
+  // Guide modal & feature overview
   // -----------------------------------------------------------------------
+
+  _featuresGuideHtml() {
+    const zh = this._lang === 'zh';
+    if (zh) {
+      return `
+<div class="features-guide-section"><h4>顶部栏</h4><ul>
+<li><strong>主题</strong>：切换浅色 / 深色。</li>
+<li><strong>语言</strong>：切换中英文界面文案。</li>
+<li><strong>一键体验</strong>：加载示例 CSV 与推荐问题，快速走通分析流程。</li>
+<li><strong>Compact（压缩）</strong>：把当前长对话<strong>合并成一条摘要</strong>，节省上下文；<strong>不会删除</strong>侧栏里的数据表。</li>
+<li><strong>Clear Chat（清空对话）</strong>：只清空聊天记录，已上传或新建的表仍在。</li>
+</ul></div>
+<div class="features-guide-section"><h4>输入区上方开关</h4><ul>
+<li><strong>规划模式</strong>：先出可编辑的执行计划，确认后再跑，适合复杂任务。</li>
+<li><strong>代码工具</strong>：允许在沙箱里执行 Python，处理合并、透视等重操作。</li>
+<li><strong>技能学习</strong>：任务完成后自动尝试把做法提炼成可复用技能（与「使用指南」里的自进化配合）。</li>
+</ul></div>
+<div class="features-guide-section"><h4>数据表</h4><ul>
+<li><strong>上传</strong>：支持 CSV / Excel，可多文件。</li>
+<li><strong>新建空白表格</strong>：无文件时也可建表，在弹窗里编辑单元格或从 Excel 复制后粘贴。</li>
+<li>点击表名可预览；可下载 CSV；手工表点<strong>保存</strong>写入服务端。</li>
+</ul></div>
+<div class="features-guide-section"><h4>技能（Skills）</h4><ul>
+<li><strong>+ Add / Import</strong>：手写技能或导入 zip 包。</li>
+<li><strong>从历史中发现技能</strong>：扫描对话，把重复分析模式收成技能。</li>
+<li><strong>Clear</strong>：清空已安装的包技能（谨慎）。</li>
+</ul></div>
+<div class="features-guide-section"><h4>记忆（Memory）</h4><ul>
+<li><strong>Overview</strong>：生成偏好与上下文的文字总览。</li>
+<li><strong>+ Add</strong>：手动写入长期记忆。</li>
+<li><strong>Forget</strong>：按描述删除相关记忆条目。</li>
+<li><strong>Clear</strong>：清空全部记忆。</li>
+</ul></div>
+<div class="features-guide-section"><h4>侧栏底部</h4><ul>
+<li><strong>成长报告</strong>：查看领域熟练度、效率与里程碑（自进化相关）。</li>
+<li><strong>使用指南</strong>：专门讲「越用越聪明」、反馈与技能进化流程。</li>
+<li><strong>功能一览</strong>：即本窗口，梳理界面功能。</li>
+</ul></div>`;
+    }
+    return `
+<div class="features-guide-section"><h4>Top bar</h4><ul>
+<li><strong>Theme</strong> — switch light / dark.</li>
+<li><strong>Language</strong> — switch English / Chinese labels.</li>
+<li><strong>Demo</strong> — load sample CSVs and suggested questions to try the flow quickly.</li>
+<li><strong>Compact</strong> — merge the current long chat into <strong>one summary message</strong> to save context. Your <strong>tables in the sidebar are not removed</strong>.</li>
+<li><strong>Clear Chat</strong> — clears chat history only; uploaded or created tables stay.</li>
+</ul></div>
+<div class="features-guide-section"><h4>Toolbar above the input</h4><ul>
+<li><strong>Plan mode</strong> — generate a reviewable plan before execution.</li>
+<li><strong>Code tool</strong> — allow sandboxed Python for heavy joins, pivots, etc.</li>
+<li><strong>Skill learning</strong> — after tasks, optionally distil reusable skills (works with the self-evolution guide).</li>
+</ul></div>
+<div class="features-guide-section"><h4>Tables</h4><ul>
+<li><strong>Upload</strong> — CSV / Excel, multiple files OK.</li>
+<li><strong>New blank table</strong> — create a sheet without a file; edit cells or paste from Excel in the viewer.</li>
+<li>Click a table to preview; download CSV; for manual tables use <strong>Save</strong> to persist edits.</li>
+</ul></div>
+<div class="features-guide-section"><h4>Skills</h4><ul>
+<li><strong>+ Add / Import</strong> — add a skill or import a .zip package.</li>
+<li><strong>Discover from history</strong> — mine recurring patterns from past chats.</li>
+<li><strong>Clear</strong> — remove all package skills (use with care).</li>
+</ul></div>
+<div class="features-guide-section"><h4>Memory</h4><ul>
+<li><strong>Overview</strong> — generate a text summary of stored preferences/context.</li>
+<li><strong>+ Add</strong> — add a long-term memory note.</li>
+<li><strong>Forget</strong> — remove memories matching a short description.</li>
+<li><strong>Clear</strong> — wipe all memory.</li>
+</ul></div>
+<div class="features-guide-section"><h4>Sidebar footer</h4><ul>
+<li><strong>Growth report</strong> — domain stats, efficiency, milestones (self-evolution).</li>
+<li><strong>User guide</strong> — how TabClaw learns from feedback (separate from this list).</li>
+<li><strong>Features</strong> — this overview of UI capabilities.</li>
+</ul></div>`;
+  }
+
+  showFeaturesGuideModal() {
+    const modal = document.getElementById('features-guide-modal');
+    const zh = this._lang === 'zh';
+    const title = document.getElementById('features-guide-title');
+    if (title) title.textContent = zh ? '功能一览' : 'Feature overview';
+    const sub = document.getElementById('features-guide-subtitle');
+    if (sub) sub.textContent = zh ? '各按钮与开关在做什么' : 'What each control does';
+    const closeBtn = document.getElementById('features-guide-close-btn');
+    if (closeBtn) closeBtn.textContent = zh ? '知道了' : 'Got it';
+    const body = document.getElementById('features-guide-body');
+    if (body) body.innerHTML = this._featuresGuideHtml();
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  hideFeaturesGuideModal() {
+    const modal = document.getElementById('features-guide-modal');
+    if (modal) modal.classList.add('hidden');
+  }
 
   showGuideModal() {
     const modal = document.getElementById('guide-modal');

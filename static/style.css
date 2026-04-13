@@ -2371,6 +2371,41 @@ html.light .compact-notice { background: var(--primary-dark)08; }
 }
 .guide-help-btn:hover { opacity: 1; }
 
+.features-guide-modal { width: 92vw; max-width: 560px; }
+.features-guide-section {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.features-guide-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.features-guide-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.features-guide-section p,
+.features-guide-section li {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+.features-guide-section ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.features-guide-section li { margin-bottom: 4px; }
+.features-guide-section code,
+.features-guide-section strong {
+  color: var(--text);
+  font-size: inherit;
+}
+
 /* ── Chat empty state tip ─────────────────────────────────────────── */
 .chat-empty-tip {
   margin-top: 16px;
@@ -2385,6 +2420,15 @@ html.light .compact-notice { background: var(--primary-dark)08; }
   text-align: center;
 }
 .chat-empty-tip:hover { opacity: 1; }
+.chat-empty-tip-secondary {
+  margin-top: 8px;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+.chat-empty-tip-secondary:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
 
 /* ── Feedback hint text ───────────────────────────────────────────── */
 .feedback-hint {

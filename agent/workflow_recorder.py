@@ -166,11 +166,36 @@ def find_recurring_patterns(min_occurrences: int = 2) -> List[Dict]:
     return recurring
 
 
+_DOMAIN_KEYWORDS: Dict[str, List[str]] = {
+    "销售分析": ["sales", "revenue", "profit", "销售", "收入", "利润", "营收", "业绩", "订单"],
+    "HR/人才": ["employee", "salary", "hr", "人才", "薪资", "绩效", "部门", "员工", "hiring"],
+    "财务报表": ["finance", "cost", "budget", "财务", "成本", "预算", "报表", "支出", "资产"],
+    "用户分析": ["user", "customer", "nps", "satisfaction", "用户", "客户", "满意度", "留存", "churn"],
+    "产品分析": ["product", "category", "rating", "产品", "品类", "评分", "库存", "SKU"],
+    "通用数据": [],
+}
+
+
+def _classify_domain(user_message: str, tables: List[str]) -> str:
+    text = (user_message + " " + " ".join(tables)).lower()
+    scores: Dict[str, int] = {}
+    for domain, keywords in _DOMAIN_KEYWORDS.items():
+        if not keywords:
+            continue
+        scores[domain] = sum(1 for kw in keywords if kw in text)
+    if not scores or max(scores.values()) == 0:
+        return "通用数据"
+    return max(scores, key=lambda d: scores[d])
+
+
 def get_growth_profile() -> Dict[str, Any]:
-    """Aggregate workflow data into a growth profile for the UI."""
+    """Aggregate workflow data into a rich growth profile for the UI."""
     if not WORKFLOWS_DIR.exists():
-        return {"total_sessions": 0, "skills_learned": 0, "satisfaction_rate": None,
-                "recent_events": [], "tool_frequency": {}}
+        return {
+            "total_sessions": 0, "skills_learned": 0, "satisfaction_rate": None,
+            "recent_events": [], "tool_frequency": {}, "domains": [],
+            "milestones": [], "efficiency": {},
+        }
 
     total = 0
     skills_learned = 0
@@ -178,18 +203,47 @@ def get_growth_profile() -> Dict[str, Any]:
     bad = 0
     tool_freq: Dict[str, int] = {}
     recent_events: List[Dict] = []
+    domain_stats: Dict[str, Dict[str, Any]] = {}
+    all_durations: List[int] = []
+    all_step_counts: List[int] = []
+    skill_reuse_count = 0
+    upgrade_events: List[Dict] = []
 
-    for f in sorted(WORKFLOWS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    files = sorted(WORKFLOWS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for f in files:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
+
         total += 1
         fb = data.get("user_feedback")
         if fb == "good":
             good += 1
         elif fb == "bad":
             bad += 1
+
+        duration = data.get("duration_ms", 0)
+        step_count = len(data.get("steps", []))
+        all_durations.append(duration)
+        all_step_counts.append(step_count)
+
+        if data.get("skills_used"):
+            skill_reuse_count += 1
+
+        domain = _classify_domain(
+            data.get("user_message", ""),
+            data.get("tables_involved", []),
+        )
+        if domain not in domain_stats:
+            domain_stats[domain] = {"sessions": 0, "good": 0, "bad": 0, "total_steps": 0}
+        ds = domain_stats[domain]
+        ds["sessions"] += 1
+        ds["total_steps"] += step_count
+        if fb == "good":
+            ds["good"] += 1
+        elif fb == "bad":
+            ds["bad"] += 1
 
         if data.get("skill_distilled"):
             skills_learned += 1
@@ -204,12 +258,83 @@ def get_growth_profile() -> Dict[str, Any]:
             if name:
                 tool_freq[name] = tool_freq.get(name, 0) + 1
 
+    # Domain proficiency
+    domains = []
+    for dname, ds in sorted(domain_stats.items(), key=lambda x: -x[1]["sessions"]):
+        total_fb = ds["good"] + ds["bad"]
+        proficiency = 0.0
+        if total_fb > 0:
+            proficiency = round(ds["good"] / total_fb, 2)
+        elif ds["sessions"] > 0:
+            proficiency = 0.5
+        domains.append({
+            "name": dname,
+            "sessions": ds["sessions"],
+            "proficiency": proficiency,
+            "avg_steps": round(ds["total_steps"] / ds["sessions"], 1) if ds["sessions"] else 0,
+        })
+
+    # Efficiency metrics: compare first-half vs second-half of sessions
+    efficiency: Dict[str, Any] = {}
+    if len(all_durations) >= 4:
+        mid = len(all_durations) // 2
+        old_durations = all_durations[mid:]
+        new_durations = all_durations[:mid]
+        old_steps = all_step_counts[mid:]
+        new_steps = all_step_counts[:mid]
+        old_avg_d = sum(old_durations) / len(old_durations)
+        new_avg_d = sum(new_durations) / len(new_durations)
+        old_avg_s = sum(old_steps) / len(old_steps)
+        new_avg_s = sum(new_steps) / len(new_steps)
+        efficiency = {
+            "early_avg_duration_ms": int(old_avg_d),
+            "recent_avg_duration_ms": int(new_avg_d),
+            "duration_change_pct": round((new_avg_d - old_avg_d) / old_avg_d * 100, 1) if old_avg_d else 0,
+            "early_avg_steps": round(old_avg_s, 1),
+            "recent_avg_steps": round(new_avg_s, 1),
+            "steps_change_pct": round((new_avg_s - old_avg_s) / old_avg_s * 100, 1) if old_avg_s else 0,
+        }
+
+    # Milestones
+    milestones = []
+    milestone_thresholds = [
+        (1, "🎯 完成第一次分析"),
+        (10, "🔟 累计 10 次分析"),
+        (50, "🏅 累计 50 次分析"),
+        (100, "💯 累计 100 次分析"),
+    ]
+    for threshold, label in milestone_thresholds:
+        if total >= threshold:
+            milestones.append({"threshold": threshold, "label": label, "reached": True})
+        else:
+            milestones.append({"threshold": threshold, "label": label, "reached": False})
+            break
+
+    skill_milestones = [
+        (1, "🧠 学会第一个技能"),
+        (5, "🎓 累计学会 5 个技能"),
+        (10, "🏆 累计学会 10 个技能"),
+    ]
+    for threshold, label in skill_milestones:
+        if skills_learned >= threshold:
+            milestones.append({"threshold": threshold, "label": label, "reached": True})
+        else:
+            milestones.append({"threshold": threshold, "label": label, "reached": False})
+            break
+
+    if skill_reuse_count >= 1:
+        milestones.append({"threshold": 1, "label": "♻️ 首次复用已学技能", "reached": True})
+
     total_feedback = good + bad
     return {
         "total_sessions": total,
         "skills_learned": skills_learned,
+        "skill_reuse_count": skill_reuse_count,
         "satisfaction_rate": round(good / total_feedback, 2) if total_feedback else None,
         "feedback_counts": {"good": good, "bad": bad},
         "recent_events": recent_events[:10],
         "tool_frequency": dict(sorted(tool_freq.items(), key=lambda x: -x[1])[:15]),
+        "domains": domains,
+        "efficiency": efficiency,
+        "milestones": milestones,
     }

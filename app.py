@@ -383,6 +383,37 @@ async def toggle_skill_package(slug: str, body: PackageToggleBody):
         raise HTTPException(404, str(e))
 
 
+@app.get("/api/skills/package/{slug}/detail")
+async def skill_package_detail(slug: str):
+    """Return full detail for a package skill including version history and stats."""
+    pkg = next((p for p in skill_registry._packages if p["slug"] == slug), None)
+    if not pkg:
+        raise HTTPException(404, "Skill not found")
+    meta_path = Path(pkg["skill_dir"]) / "_meta.json"
+    meta: Dict[str, Any] = {}
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {
+        "slug": pkg["slug"],
+        "name": pkg["name"],
+        "description": pkg["description"],
+        "body": pkg["body"],
+        "enabled": pkg["enabled"],
+        "source": meta.get("source", "manual"),
+        "version": meta.get("version", 1),
+        "created_at": meta.get("created_at"),
+        "usage_count": meta.get("usage_count", 0),
+        "success_count": meta.get("success_count", 0),
+        "failure_count": meta.get("failure_count", 0),
+        "last_used_at": meta.get("last_used_at"),
+        "upgrade_history": meta.get("upgrade_history", []),
+        "derived_from_workflow": meta.get("derived_from_workflow", ""),
+    }
+
+
 @app.post("/api/skills/discover")
 async def discover_skills():
     """Scan workflow history for recurring patterns and suggest new skills."""

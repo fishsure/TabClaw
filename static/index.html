@@ -361,6 +361,25 @@
   </div>
 </div>
 
+<!-- Package skill detail modal -->
+<div id="pkg-detail-modal" class="modal-overlay hidden">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pkg-detail-name"></div>
+        <div class="modal-subtitle" id="pkg-detail-sub"></div>
+      </div>
+      <button class="modal-close" onclick="app.hidePkgDetailModal()">×</button>
+    </div>
+    <div class="modal-body" id="pkg-detail-body">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="app.hidePkgDetailModal()">Close</button>
+      <button class="btn primary" id="pkg-detail-improve-btn">⬆ Improve</button>
+    </div>
+  </div>
+</div>
+
 <!-- Growth dashboard modal -->
 <div id="growth-modal" class="modal-overlay hidden">
   <div class="modal" style="width:620px">

@@ -195,7 +195,7 @@ class TabClawApp {
     });
 
     // Close modals on overlay click
-    ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal'].forEach(id => {
+    ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('click', e => {
         if (e.target.id === id) this._closeModalById(id);
@@ -205,7 +205,7 @@ class TabClawApp {
     // Escape key closes modals
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal'].forEach(id => {
+        ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal'].forEach(id => {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) this._closeModalById(id);
         });
@@ -222,6 +222,7 @@ class TabClawApp {
     else if (id === 'memory-summary-modal') this.hideMemorySummaryModal();
     else if (id === 'demo-modal') this.hideDemoModal();
     else if (id === 'growth-modal') this.hideGrowthModal();
+    else if (id === 'pkg-detail-modal') this.hidePkgDetailModal();
   }
 
   _autoresize(textarea) {
@@ -1246,16 +1247,15 @@ class TabClawApp {
           : '';
         const vLabel = s.version ? ` <span class="skill-version">v${this._esc(String(s.version))}</span>` : '';
         return `
-        <div class="skill-item${s.enabled ? '' : ' skill-disabled'}">
+        <div class="skill-item skill-item-clickable${s.enabled ? '' : ' skill-disabled'}" onclick="app.showPkgDetailModal('${this._esc(s.slug)}')">
           <span class="skill-dot package"></span>
           <div class="skill-info">
             <div class="skill-name">${sourceLabel}${this._esc(s.name)}${vLabel}</div>
             <div class="skill-desc">${this._esc(s.description)}</div>
           </div>
           <div class="skill-actions">
-            <button class="btn icon-only sm" title="Improve with feedback" onclick="app._improveSkill('${this._esc(s.slug)}')">⬆</button>
-            <button class="btn icon-only sm" title="${s.enabled ? 'Disable' : 'Enable'}" onclick="app._togglePackageSkill('${this._esc(s.slug)}', ${!s.enabled})">${s.enabled ? '⏸' : '▶'}</button>
-            <button class="btn icon-only sm danger" onclick="app._deletePackageSkill('${this._esc(s.slug)}')">🗑</button>
+            <button class="btn icon-only sm" title="${s.enabled ? 'Disable' : 'Enable'}" onclick="event.stopPropagation();app._togglePackageSkill('${this._esc(s.slug)}', ${!s.enabled})">${s.enabled ? '⏸' : '▶'}</button>
+            <button class="btn icon-only sm danger" onclick="event.stopPropagation();app._deletePackageSkill('${this._esc(s.slug)}')">🗑</button>
           </div>
         </div>`;
       }).join('');
@@ -1454,6 +1454,74 @@ class TabClawApp {
     } catch (e) {
       this._notify(e.message, 'error');
     }
+  }
+
+  // -----------------------------------------------------------------------
+  // Package skill detail modal
+  // -----------------------------------------------------------------------
+
+  async showPkgDetailModal(slug) {
+    const modal = document.getElementById('pkg-detail-modal');
+    const body = document.getElementById('pkg-detail-body');
+    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div>';
+    modal.classList.remove('hidden');
+
+    try {
+      const d = await this._api('GET', `/api/skills/package/${slug}/detail`);
+      document.getElementById('pkg-detail-name').textContent = `${d.name}`;
+      const sourceMap = {distilled: '🧠 自动学习', discovered: '🔍 模式发现', manual: '✏️ 手动创建'};
+      document.getElementById('pkg-detail-sub').textContent =
+        `v${d.version} · ${sourceMap[d.source] || d.source} · ${d.enabled ? '已启用' : '已禁用'}`;
+
+      document.getElementById('pkg-detail-improve-btn').onclick = () => {
+        this.hidePkgDetailModal();
+        this._improveSkill(slug);
+      };
+
+      const totalFb = d.success_count + d.failure_count;
+      const rate = totalFb ? Math.round(d.success_count / totalFb * 100) + '%' : '—';
+
+      let historyHtml = '';
+      if (d.upgrade_history && d.upgrade_history.length) {
+        historyHtml = `<div class="pkg-detail-section">
+          <div class="pkg-detail-section-title">版本历史</div>
+          ${d.upgrade_history.map(h => `
+            <div class="pkg-detail-history-item">
+              <span class="pkg-detail-ver">v${h.from_version} → v${h.to_version}</span>
+              <span class="pkg-detail-reason">${this._esc(h.reason)}</span>
+              <span class="pkg-detail-date">${(h.timestamp || '').slice(0, 10)}</span>
+            </div>`).join('')}
+        </div>`;
+      }
+
+      body.innerHTML = `
+        <div class="pkg-detail-stats-row">
+          <div class="pkg-detail-stat"><span class="pkg-detail-stat-val">${d.usage_count}</span><span class="pkg-detail-stat-lbl">使用次数</span></div>
+          <div class="pkg-detail-stat"><span class="pkg-detail-stat-val">${d.success_count}</span><span class="pkg-detail-stat-lbl">👍</span></div>
+          <div class="pkg-detail-stat"><span class="pkg-detail-stat-val">${d.failure_count}</span><span class="pkg-detail-stat-lbl">👎</span></div>
+          <div class="pkg-detail-stat"><span class="pkg-detail-stat-val">${rate}</span><span class="pkg-detail-stat-lbl">好评率</span></div>
+        </div>
+        <div class="pkg-detail-section">
+          <div class="pkg-detail-section-title">技能描述</div>
+          <div class="pkg-detail-desc">${this._esc(d.description)}</div>
+        </div>
+        <div class="pkg-detail-section">
+          <div class="pkg-detail-section-title">SKILL.md 指令内容</div>
+          <div class="pkg-detail-body-content">${this._renderMarkdown(d.body)}</div>
+        </div>
+        ${historyHtml}
+        <div class="pkg-detail-meta-row">
+          ${d.created_at ? `<span>创建于 ${d.created_at.slice(0, 10)}</span>` : ''}
+          ${d.last_used_at ? `<span>最后使用 ${d.last_used_at.slice(0, 10)}</span>` : ''}
+          ${d.derived_from_workflow ? `<span>来源会话 ${d.derived_from_workflow}</span>` : ''}
+        </div>`;
+    } catch (e) {
+      body.innerHTML = `<div style="padding:20px;color:var(--red)">${this._esc(e.message)}</div>`;
+    }
+  }
+
+  hidePkgDetailModal() {
+    document.getElementById('pkg-detail-modal').classList.add('hidden');
   }
 
   // -----------------------------------------------------------------------
@@ -1975,18 +2043,79 @@ class TabClawApp {
     modal.classList.remove('hidden');
 
     try {
-      const profile = await this._api('GET', '/api/growth/profile');
-      const rate = profile.satisfaction_rate !== null
-        ? `${Math.round(profile.satisfaction_rate * 100)}%` : '—';
-      const skillStats = (profile.skills_stats || []);
-      const topTools = Object.entries(profile.tool_frequency || {}).slice(0, 8);
+      const p = await this._api('GET', '/api/growth/profile');
+      const rate = p.satisfaction_rate !== null ? `${Math.round(p.satisfaction_rate * 100)}%` : '—';
+      const skillStats = (p.skills_stats || []);
+      const topTools = Object.entries(p.tool_frequency || {}).slice(0, 8);
+      const domains = p.domains || [];
+      const eff = p.efficiency || {};
+      const milestones = p.milestones || [];
 
+      // Milestones
+      let msHtml = '';
+      if (milestones.length) {
+        msHtml = `<div class="growth-milestones">${milestones.map(m =>
+          `<span class="growth-ms ${m.reached ? 'reached' : 'pending'}">${m.label}</span>`
+        ).join('')}</div>`;
+      }
+
+      // Domain proficiency bars
+      let domainHtml = '';
+      if (domains.length) {
+        domainHtml = `<div class="growth-section">
+          <div class="growth-section-title">领域熟练度</div>
+          ${domains.map(d => {
+            const pct = Math.round(d.proficiency * 100);
+            return `<div class="growth-domain-row">
+              <span class="growth-domain-name">${this._esc(d.name)}</span>
+              <div class="growth-domain-bar"><div class="growth-domain-fill" style="width:${pct}%"></div></div>
+              <span class="growth-domain-meta">${d.sessions} 次 · ${pct}%</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+
+      // Efficiency comparison
+      let effHtml = '';
+      if (eff.early_avg_steps) {
+        const dPct = eff.duration_change_pct;
+        const sPct = eff.steps_change_pct;
+        const dColor = dPct <= 0 ? 'var(--green)' : 'var(--red)';
+        const sColor = sPct <= 0 ? 'var(--green)' : 'var(--red)';
+        const dLabel = dPct <= 0 ? `快了 ${Math.abs(dPct)}%` : `慢了 ${dPct}%`;
+        const sLabel = sPct <= 0 ? `少了 ${Math.abs(sPct)}%` : `多了 ${sPct}%`;
+        effHtml = `<div class="growth-section">
+          <div class="growth-section-title">效率变化 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（前半 vs 近期）</span></div>
+          <div class="growth-eff-grid">
+            <div class="growth-eff-card">
+              <div class="growth-eff-label">平均耗时</div>
+              <div class="growth-eff-vals">
+                <span class="growth-eff-old">${(eff.early_avg_duration_ms / 1000).toFixed(1)}s</span>
+                <span class="growth-eff-arrow">→</span>
+                <span class="growth-eff-new">${(eff.recent_avg_duration_ms / 1000).toFixed(1)}s</span>
+              </div>
+              <div class="growth-eff-delta" style="color:${dColor}">${dLabel}</div>
+            </div>
+            <div class="growth-eff-card">
+              <div class="growth-eff-label">平均步数</div>
+              <div class="growth-eff-vals">
+                <span class="growth-eff-old">${eff.early_avg_steps}</span>
+                <span class="growth-eff-arrow">→</span>
+                <span class="growth-eff-new">${eff.recent_avg_steps}</span>
+              </div>
+              <div class="growth-eff-delta" style="color:${sColor}">${sLabel}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      // Skills
       let skillsHtml = '';
       if (skillStats.length) {
         skillsHtml = `<div class="growth-section">
           <div class="growth-section-title">已学技能</div>
           <div class="growth-skills-list">${skillStats.map(s => `
-            <div class="growth-skill-item">
+            <div class="growth-skill-item" style="cursor:pointer" onclick="app.hideGrowthModal();app.showPkgDetailModal('${this._esc(s.slug)}')">
               <span class="growth-skill-name">${this._esc(s.name)}</span>
               <span class="growth-skill-meta">v${s.version} · 使用 ${s.usage_count} 次 · 👍${s.success_count} 👎${s.failure_count}</span>
             </div>`).join('')}
@@ -1994,6 +2123,7 @@ class TabClawApp {
         </div>`;
       }
 
+      // Tools
       let toolsHtml = '';
       if (topTools.length) {
         const maxCount = topTools[0]?.[1] || 1;
@@ -2009,11 +2139,12 @@ class TabClawApp {
         </div>`;
       }
 
+      // Timeline
       let eventsHtml = '';
-      if (profile.recent_events && profile.recent_events.length) {
+      if (p.recent_events && p.recent_events.length) {
         eventsHtml = `<div class="growth-section">
           <div class="growth-section-title">成长时间线</div>
-          <div class="growth-timeline">${profile.recent_events.map(e => `
+          <div class="growth-timeline">${p.recent_events.map(e => `
             <div class="growth-event">
               <span class="growth-event-date">${this._esc(e.date)}</span>
               <span class="growth-event-text">${this._esc(e.event)}</span>
@@ -2022,29 +2153,34 @@ class TabClawApp {
         </div>`;
       }
 
+      const isEmpty = !skillStats.length && !topTools.length && !domains.length;
+
       content.innerHTML = `
         <div class="growth-stats-grid">
           <div class="growth-stat-card">
-            <div class="growth-stat-value">${profile.total_sessions}</div>
+            <div class="growth-stat-value">${p.total_sessions}</div>
             <div class="growth-stat-label">分析会话</div>
           </div>
           <div class="growth-stat-card">
-            <div class="growth-stat-value">${profile.skills_learned}</div>
+            <div class="growth-stat-value">${p.skills_learned}</div>
             <div class="growth-stat-label">已学技能</div>
+          </div>
+          <div class="growth-stat-card">
+            <div class="growth-stat-value">${p.skill_reuse_count || 0}</div>
+            <div class="growth-stat-label">技能复用</div>
           </div>
           <div class="growth-stat-card">
             <div class="growth-stat-value">${rate}</div>
             <div class="growth-stat-label">满意率</div>
           </div>
-          <div class="growth-stat-card">
-            <div class="growth-stat-value">${profile.feedback_counts?.good || 0} / ${profile.feedback_counts?.bad || 0}</div>
-            <div class="growth-stat-label">👍 / 👎</div>
-          </div>
         </div>
+        ${msHtml}
+        ${domainHtml}
+        ${effHtml}
         ${skillsHtml}
         ${toolsHtml}
         ${eventsHtml}
-        ${!skillStats.length && !topTools.length
+        ${isEmpty
           ? '<div class="empty-state" style="margin-top:20px">还没有分析记录。开始使用 TabClaw 后，这里会展示成长轨迹。</div>'
           : ''}`;
     } catch (e) {

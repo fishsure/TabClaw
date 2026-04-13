@@ -29,6 +29,7 @@ Drop in a CSV or Excel file and describe what you want. TabClaw shows you its pl
 
 ## 🗞️ News
 
+- **[2026-04-13]** **Self-Evolving Agent v2:** TabClaw now features a complete self-evolution engine — pattern discovery mines recurring workflows and suggests new skills; feedback-driven improvement automatically upgrades skills that receive negative feedback; skill versioning tracks every improvement with rollback support; and a **Growth Dashboard** visualises domain proficiency, efficiency trends, milestones, and the full learning timeline. The more you use it, the better it becomes.
 - **[2026-04-02]** **ClawHub-compatible package skills:** skills distributed as a `SKILL.md` archive (e.g. from [ClawHub](https://clawdhub.com)) can be installed directly — open the **Skills** sidebar and use **📦 Import** to upload a `.zip`. The skill body is injected into the agent’s system prompt; enable or disable each package from the list.
 - **[2026-03-19]** TabClaw is now open-source! Code and docs are publicly available on GitHub.
 
@@ -52,7 +53,7 @@ When you upload more than one table and ask a comparative question, TabClaw auto
 <p align="center"><img src="asset/para.png" alt="Multi-Agent Parallel Analysis" width="75%" /></p>
 
 ### 🧠 It learns from every session
-After completing a non-trivial task, TabClaw reflects on what it did and distils the pattern into a reusable **custom skill**. Next time you ask something similar, it calls that skill directly. The more you use it, the smarter it gets.
+After completing a non-trivial task, TabClaw reflects on what it did and distils the pattern into a reusable **custom skill**. Next time you ask something similar, it calls that skill directly. Skills are **versioned** and **auto-improved** based on your feedback — bad results trigger an automatic upgrade cycle. A **Growth Dashboard** tracks domain proficiency, efficiency gains, milestones, and a learning timeline so you can see exactly how TabClaw is evolving.
 
 <p align="center"><img src="asset/skill.png" alt="Skill Learning" width="75%" /></p>
 

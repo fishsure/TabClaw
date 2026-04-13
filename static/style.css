@@ -1896,3 +1896,138 @@ html.light .compact-notice { background: var(--primary-dark)08; }
   color: var(--text-dim);
   white-space: nowrap;
 }
+
+/* ── Feedback buttons (👍/👎) ─────────────────────────────────────── */
+.feedback-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 0;
+}
+.feedback-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .15s;
+}
+.feedback-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+.feedback-btn.good:hover { color: var(--green); border-color: var(--green); }
+.feedback-btn.bad:hover  { color: var(--red);   border-color: var(--red); }
+.feedback-done {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+.feedback-done.good { color: var(--green); }
+.feedback-done.bad  { color: var(--text-muted); }
+
+/* ── Skill reused hint ────────────────────────────────────────────── */
+.skill-reused-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #6366f111;
+  border: 1px solid #6366f133;
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.skill-reused-icon { flex-shrink: 0; font-size: 14px; }
+.skill-reused-text { flex: 1; line-height: 1.4; }
+
+/* ── Growth button in sidebar ─────────────────────────────────────── */
+.growth-entry {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+}
+.growth-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.growth-btn:hover { color: var(--primary); }
+
+/* ── Growth dashboard modal ───────────────────────────────────────── */
+.growth-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.growth-stat-card {
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.growth-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.2;
+}
+.growth-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.growth-section { margin-bottom: 14px; }
+.growth-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.growth-skill-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.growth-skill-name { color: var(--text); font-weight: 500; }
+.growth-skill-meta { color: var(--text-dim); font-size: 11px; }
+
+.growth-tool-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.growth-tool-name { width: 120px; color: var(--text-muted); text-align: right; flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; }
+.growth-tool-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.growth-tool-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s; }
+.growth-tool-count { width: 30px; color: var(--text-dim); font-size: 11px; }
+
+.growth-timeline { }
+.growth-event {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.growth-event-date { color: var(--text-dim); font-size: 11px; width: 80px; flex-shrink: 0; }
+.growth-event-text { color: var(--text-muted); }

@@ -7,6 +7,7 @@ import json
 import re
 import shutil
 import zipfile
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -444,14 +445,14 @@ class SkillRegistry:
             })
         return packages
 
-    def create_package(self, name: str, description: str, body: str, source: str = "manual") -> Dict:
+    def create_package(self, name: str, description: str, body: str,
+                       source: str = "manual", derived_from: str = "") -> Dict:
         """Create a new SKILL.md package directly from name/description/body."""
         SKILLS_DIR.mkdir(parents=True, exist_ok=True)
         slug = re.sub(r"[^a-z0-9_-]", "-", name.lower().replace(" ", "-")).strip("-")
         if not slug:
             slug = "skill"
 
-        # Make slug unique if it already exists
         base_slug = slug
         counter = 1
         while (SKILLS_DIR / slug).exists():
@@ -469,8 +470,20 @@ description: "{description}"
 {body}
 """
         (dest / "SKILL.md").write_text(skill_md_content, encoding="utf-8")
+
+        meta = {
+            "slug": slug,
+            "source": source,
+            "version": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "usage_count": 0,
+            "success_count": 0,
+            "failure_count": 0,
+            "last_used_at": None,
+            "derived_from_workflow": derived_from,
+        }
         (dest / "_meta.json").write_text(
-            json.dumps({"slug": slug, "source": source}), encoding="utf-8"
+            json.dumps(meta, ensure_ascii=False), encoding="utf-8"
         )
 
         self._packages = self._load_packages()
@@ -587,6 +600,60 @@ description: "{description}"
         Returns combined stdout from all matching scripts.
         """
         return _run_event_hooks(self._packages, event, tool_output)
+
+    def record_usage(self, slug: str):
+        """Increment usage_count and update last_used_at for a package skill."""
+        dest = SKILLS_DIR / slug
+        meta_path = dest / "_meta.json"
+        if not meta_path.exists():
+            return
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            meta["usage_count"] = meta.get("usage_count", 0) + 1
+            meta["last_used_at"] = datetime.now(timezone.utc).isoformat()
+            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def record_feedback(self, slug: str, feedback: str):
+        """Increment success_count or failure_count based on user feedback."""
+        dest = SKILLS_DIR / slug
+        meta_path = dest / "_meta.json"
+        if not meta_path.exists():
+            return
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            if feedback == "good":
+                meta["success_count"] = meta.get("success_count", 0) + 1
+            elif feedback == "bad":
+                meta["failure_count"] = meta.get("failure_count", 0) + 1
+            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def get_skill_stats(self) -> List[Dict]:
+        """Return usage statistics for all package skills."""
+        stats = []
+        for p in self._packages:
+            meta_path = Path(p["skill_dir"]) / "_meta.json"
+            meta: Dict[str, Any] = {}
+            if meta_path.exists():
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            stats.append({
+                "slug": p["slug"],
+                "name": p["name"],
+                "source": meta.get("source", "manual"),
+                "version": meta.get("version", 1),
+                "usage_count": meta.get("usage_count", 0),
+                "success_count": meta.get("success_count", 0),
+                "failure_count": meta.get("failure_count", 0),
+                "last_used_at": meta.get("last_used_at"),
+                "created_at": meta.get("created_at"),
+            })
+        return stats
 
     def has_package_skills(self) -> bool:
         return any(p.get("enabled") for p in self._packages)

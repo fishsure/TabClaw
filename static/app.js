@@ -73,20 +73,17 @@ class TabClawApp {
       streaming: false,
       currentPlan: null,
       currentPlanMessage: '',
-      // Table modal state
       tableModal: { tableId: null, page: 1, totalPages: 1 },
-      // Skill edit state
       skillEdit: null,
-      // Memory edit state
-      memoryEdit: null,  // null = adding new, {category, key} = editing existing
-      // Demo state
+      memoryEdit: null,
       demoRunning: false,
-      // Clarification state
       clarifying: false,
+      // Workflow tracking: maps msgId → session_id from backend
+      currentWorkflowId: null,
     };
 
-    this._streamMsgId = null; // DOM id of the message being streamed
-    this._streamBuffer = '';  // accumulates text chunks
+    this._streamMsgId = null;
+    this._streamBuffer = '';
 
     this._init();
   }
@@ -197,8 +194,9 @@ class TabClawApp {
     });
 
     // Close modals on overlay click
-    ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal'].forEach(id => {
-      document.getElementById(id).addEventListener('click', e => {
+    ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', e => {
         if (e.target.id === id) this._closeModalById(id);
       });
     });
@@ -206,9 +204,9 @@ class TabClawApp {
     // Escape key closes modals
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal'].forEach(id => {
+        ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal'].forEach(id => {
           const el = document.getElementById(id);
-          if (!el.classList.contains('hidden')) this._closeModalById(id);
+          if (el && !el.classList.contains('hidden')) this._closeModalById(id);
         });
       }
     });
@@ -222,6 +220,7 @@ class TabClawApp {
     else if (id === 'memory-modal') this.hideMemoryModal();
     else if (id === 'memory-summary-modal') this.hideMemorySummaryModal();
     else if (id === 'demo-modal') this.hideDemoModal();
+    else if (id === 'growth-modal') this.hideGrowthModal();
   }
 
   _autoresize(textarea) {
@@ -547,17 +546,19 @@ class TabClawApp {
       this._appendToMessage(msgId, `\n\n*Stream error: ${e.message}*`);
     } finally {
       this._finalizeStreamMessage(msgId);
-      // Show final answer box and result download panel
       this._highlightFinalAnswer(msgId);
       if (this._currentMsgTables && this._currentMsgTables.length > 0) {
         this._appendResultDownloadPanel(msgId, this._currentMsgTables);
+      }
+      if (this.state.currentWorkflowId) {
+        this._appendFeedbackButtons(msgId, this.state.currentWorkflowId);
       }
       this.state.streaming = false;
       this._setInputEnabled(true);
       this._streamMsgId = null;
       this._streamBuffer = '';
       this._currentMsgTables = [];
-      // Refresh table list (new result tables may have been created)
+      this.state.currentWorkflowId = null;
       await this._loadTables();
       await this._loadMemory();
     }
@@ -617,6 +618,14 @@ class TabClawApp {
       case 'skill_learned':
         this._appendSkillLearnedBadge(msgId, event.skill);
         this._loadSkills();
+        break;
+
+      case 'workflow_id':
+        this.state.currentWorkflowId = event.session_id;
+        break;
+
+      case 'skill_reused':
+        this._appendSkillReusedHint(msgId, event.skill_name, event.message);
         break;
 
       case 'agent_pool_start':
@@ -1821,6 +1830,151 @@ class TabClawApp {
     body.appendChild(div);
     this._scrollChat();
     this._notify(`New skill learned: ${skill.name}`, 'success');
+  }
+
+  // -----------------------------------------------------------------------
+  // Feedback buttons (👍/👎)
+  // -----------------------------------------------------------------------
+
+  _appendFeedbackButtons(msgId, sessionId) {
+    const body = document.getElementById(`${msgId}-body`);
+    if (!body) return;
+    const div = document.createElement('div');
+    div.className = 'feedback-actions';
+    div.id = `feedback-${msgId}`;
+    div.innerHTML = `
+      <button class="feedback-btn good" onclick="app.sendFeedback('${sessionId}', 'good', '${msgId}')" title="有用">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+      </button>
+      <button class="feedback-btn bad" onclick="app.sendFeedback('${sessionId}', 'bad', '${msgId}')" title="不准确">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>
+      </button>`;
+    body.appendChild(div);
+  }
+
+  async sendFeedback(sessionId, feedback, msgId) {
+    const container = document.getElementById(`feedback-${msgId}`);
+    if (!container) return;
+    try {
+      await this._api('POST', `/api/workflow/${sessionId}/feedback`, { feedback });
+      container.innerHTML = feedback === 'good'
+        ? '<span class="feedback-done good">👍 感谢反馈</span>'
+        : '<span class="feedback-done bad">👎 已记录，将用于改进</span>';
+      this._notify(feedback === 'good' ? '感谢正面反馈！' : '已记录，TabClaw 将从中学习', 'success');
+    } catch (e) {
+      this._notify('反馈提交失败', 'error');
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Skill-reused hint
+  // -----------------------------------------------------------------------
+
+  _appendSkillReusedHint(msgId, skillName, message) {
+    const body = document.getElementById(`${msgId}-body`);
+    if (!body) return;
+    const div = document.createElement('div');
+    div.className = 'skill-reused-hint';
+    div.innerHTML = `
+      <span class="skill-reused-icon">💡</span>
+      <span class="skill-reused-text">${this._esc(message || `复用已学技能「${skillName}」`)}</span>`;
+    body.appendChild(div);
+    this._scrollChat();
+  }
+
+  // -----------------------------------------------------------------------
+  // Growth dashboard
+  // -----------------------------------------------------------------------
+
+  async showGrowthDashboard() {
+    const modal = document.getElementById('growth-modal');
+    const content = document.getElementById('growth-content');
+    if (!modal || !content) return;
+
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div>';
+    modal.classList.remove('hidden');
+
+    try {
+      const profile = await this._api('GET', '/api/growth/profile');
+      const rate = profile.satisfaction_rate !== null
+        ? `${Math.round(profile.satisfaction_rate * 100)}%` : '—';
+      const skillStats = (profile.skills_stats || []);
+      const topTools = Object.entries(profile.tool_frequency || {}).slice(0, 8);
+
+      let skillsHtml = '';
+      if (skillStats.length) {
+        skillsHtml = `<div class="growth-section">
+          <div class="growth-section-title">已学技能</div>
+          <div class="growth-skills-list">${skillStats.map(s => `
+            <div class="growth-skill-item">
+              <span class="growth-skill-name">${this._esc(s.name)}</span>
+              <span class="growth-skill-meta">v${s.version} · 使用 ${s.usage_count} 次 · 👍${s.success_count} 👎${s.failure_count}</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      let toolsHtml = '';
+      if (topTools.length) {
+        const maxCount = topTools[0]?.[1] || 1;
+        toolsHtml = `<div class="growth-section">
+          <div class="growth-section-title">工具使用频率</div>
+          <div class="growth-tools-list">${topTools.map(([name, count]) => `
+            <div class="growth-tool-bar-row">
+              <span class="growth-tool-name">${this._esc(name)}</span>
+              <div class="growth-tool-bar"><div class="growth-tool-bar-fill" style="width:${Math.round(count / maxCount * 100)}%"></div></div>
+              <span class="growth-tool-count">${count}</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      let eventsHtml = '';
+      if (profile.recent_events && profile.recent_events.length) {
+        eventsHtml = `<div class="growth-section">
+          <div class="growth-section-title">成长时间线</div>
+          <div class="growth-timeline">${profile.recent_events.map(e => `
+            <div class="growth-event">
+              <span class="growth-event-date">${this._esc(e.date)}</span>
+              <span class="growth-event-text">${this._esc(e.event)}</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      content.innerHTML = `
+        <div class="growth-stats-grid">
+          <div class="growth-stat-card">
+            <div class="growth-stat-value">${profile.total_sessions}</div>
+            <div class="growth-stat-label">分析会话</div>
+          </div>
+          <div class="growth-stat-card">
+            <div class="growth-stat-value">${profile.skills_learned}</div>
+            <div class="growth-stat-label">已学技能</div>
+          </div>
+          <div class="growth-stat-card">
+            <div class="growth-stat-value">${rate}</div>
+            <div class="growth-stat-label">满意率</div>
+          </div>
+          <div class="growth-stat-card">
+            <div class="growth-stat-value">${profile.feedback_counts?.good || 0} / ${profile.feedback_counts?.bad || 0}</div>
+            <div class="growth-stat-label">👍 / 👎</div>
+          </div>
+        </div>
+        ${skillsHtml}
+        ${toolsHtml}
+        ${eventsHtml}
+        ${!skillStats.length && !topTools.length
+          ? '<div class="empty-state" style="margin-top:20px">还没有分析记录。开始使用 TabClaw 后，这里会展示成长轨迹。</div>'
+          : ''}`;
+    } catch (e) {
+      content.innerHTML = `<div style="padding:20px;color:var(--red)">${this._esc(e.message)}</div>`;
+    }
+  }
+
+  hideGrowthModal() {
+    const modal = document.getElementById('growth-modal');
+    if (modal) modal.classList.add('hidden');
   }
 }
 

@@ -103,6 +103,14 @@
         <button class="btn sm danger" id="forget-btn">Forget</button>
       </div>
     </div>
+    <div class="growth-entry">
+      <button class="btn growth-btn" id="growth-btn" onclick="app.showGrowthDashboard()" title="查看 TabClaw 的成长轨迹">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+        </svg>
+        <span>成长报告</span>
+      </button>
+    </div>
     <div class="lab-credit" id="lab-credit">中国科学技术大学认知智能全国重点实验室 AGI 组</div>
   </aside>
 
@@ -348,6 +356,25 @@
     <div class="modal-footer">
       <button class="btn" onclick="app.hideSkillDetailModal()">Close</button>
       <button class="btn primary" id="skill-detail-use-btn">Use as Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- Growth dashboard modal -->
+<div id="growth-modal" class="modal-overlay hidden">
+  <div class="modal" style="width:620px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">📈 TabClaw 成长报告</div>
+        <div class="modal-subtitle">越用越聪明 — 查看 TabClaw 的学习轨迹与能力演进</div>
+      </div>
+      <button class="modal-close" onclick="app.hideGrowthModal()">×</button>
+    </div>
+    <div class="modal-body" id="growth-content">
+      <!-- populated by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="app.hideGrowthModal()">Close</button>
     </div>
   </div>
 </div>

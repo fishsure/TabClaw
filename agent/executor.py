@@ -1,9 +1,11 @@
 import json
 import re
+import time
 import asyncio
 from typing import AsyncGenerator, Dict, List
 
 from agent.skill_distiller import SkillDistiller
+from agent.workflow_recorder import WorkflowRecord, StepRecord
 
 
 class AgentExecutor:
@@ -28,20 +30,50 @@ class AgentExecutor:
         auto_learn: bool = False,
     ) -> AsyncGenerator:
         """Execute user request directly (no plan)."""
+        table_names = [t["name"] for t in tables.values()]
+        workflow = WorkflowRecord(message, table_names)
+
         hook_context = await asyncio.to_thread(self.skills.run_event_hooks, "user_prompt")
         messages = self._build_messages(message, tables, history, hook_context)
         tools = self.skills.get_tool_definitions(code_tool=code_tool)
         tool_calls_log: List[Dict] = []
+        final_text = ""
+        _step_start = time.monotonic()
+
         async for event in self._agent_stream(messages, tools, tables, result_tables_store):
             yield event
             if event["type"] == "tool_call":
+                _step_start = time.monotonic()
                 tool_calls_log.append({"name": event["skill"], "params": event["params"]})
             elif event["type"] == "tool_result" and tool_calls_log:
                 tool_calls_log[-1]["result"] = event.get("text", "")[:200]
+                elapsed = int((time.monotonic() - _step_start) * 1000)
+                produced = None
+                if "table" in event.get("text", ""):
+                    produced = event.get("text", "")[:60]
+                workflow.add_step(StepRecord(
+                    tool_name=tool_calls_log[-1]["name"],
+                    params=tool_calls_log[-1]["params"],
+                    result_summary=event.get("text", "")[:300],
+                    produced_table=produced,
+                    duration_ms=elapsed,
+                ))
+            elif event["type"] == "final_text":
+                final_text = event.get("content", "")
+
+        workflow.finish(final_text)
+        workflow.save()
+        yield {"type": "workflow_id", "session_id": workflow.session_id}
+
         await self._try_update_memory(message, tables)
         if auto_learn:
             skill = await self.distiller.try_distill(message, tool_calls_log)
             if skill:
+                workflow_data = workflow.to_dict()
+                workflow_data["skill_distilled"] = skill.get("name", "")
+                from agent.workflow_recorder import WORKFLOWS_DIR
+                path = WORKFLOWS_DIR / f"{workflow.session_id}.json"
+                path.write_text(json.dumps(workflow_data, ensure_ascii=False, indent=2), encoding="utf-8")
                 yield {"type": "skill_learned", "skill": skill}
 
     async def execute_plan(
@@ -55,6 +87,10 @@ class AgentExecutor:
         auto_learn: bool = False,
     ) -> AsyncGenerator:
         """Execute a user-approved plan step by step."""
+        table_names = [t["name"] for t in tables.values()]
+        workflow = WorkflowRecord(message, table_names)
+        workflow.plan = [{"id": s.get("id"), "description": s.get("description")} for s in steps]
+
         hook_context = await asyncio.to_thread(self.skills.run_event_hooks, "user_prompt")
         base_messages = self._build_messages(
             f"Original user request: {message}\nExecuting a plan step by step.",
@@ -63,6 +99,7 @@ class AgentExecutor:
         tools = self.skills.get_tool_definitions(code_tool=code_tool)
         conversation = list(base_messages)
         tool_calls_log: List[Dict] = []
+        _step_start = time.monotonic()
 
         for i, step in enumerate(steps):
             desc = step.get("description", f"Step {i+1}")
@@ -75,20 +112,26 @@ class AgentExecutor:
             async for event in self._agent_stream(step_messages, tools, tables, result_tables_store):
                 yield event
                 if event["type"] == "tool_call":
+                    _step_start = time.monotonic()
                     tool_calls_log.append({"name": event["skill"], "params": event["params"]})
                 elif event["type"] == "tool_result" and tool_calls_log:
                     tool_calls_log[-1]["result"] = event.get("text", "")[:200]
+                    elapsed = int((time.monotonic() - _step_start) * 1000)
+                    workflow.add_step(StepRecord(
+                        tool_name=tool_calls_log[-1]["name"],
+                        params=tool_calls_log[-1]["params"],
+                        result_summary=event.get("text", "")[:300],
+                        duration_ms=elapsed,
+                    ))
                 elif event["type"] == "final_text":
                     final_text = event["content"]
 
-            # Add step result to running conversation for context chaining
             conversation.append({"role": "user", "content": step_msg})
             if final_text:
                 conversation.append({"role": "assistant", "content": final_text})
 
             yield {"type": "step_done", "step_num": i + 1}
 
-        # Lightweight self-check: verify the original request was fully addressed
         yield {"type": "reflect_start"}
         reflect_msg = (
             f"Original user request: {message}\n\n"
@@ -99,17 +142,29 @@ class AgentExecutor:
             "If complete and correct: confirm in 1–2 sentences.\n"
             "If something is missing or wrong: fix it now by calling the appropriate tools."
         )
+        reflect_final = ""
         async for event in self._agent_stream(
             conversation + [{"role": "user", "content": reflect_msg}],
             tools, tables, result_tables_store,
         ):
             yield event
+            if event["type"] == "final_text":
+                reflect_final = event.get("content", "")
         yield {"type": "reflect_done"}
+
+        workflow.finish(reflect_final)
+        workflow.save()
+        yield {"type": "workflow_id", "session_id": workflow.session_id}
 
         await self._try_update_memory(message, tables)
         if auto_learn:
             skill = await self.distiller.try_distill(message, tool_calls_log)
             if skill:
+                workflow_data = workflow.to_dict()
+                workflow_data["skill_distilled"] = skill.get("name", "")
+                from agent.workflow_recorder import WORKFLOWS_DIR
+                path = WORKFLOWS_DIR / f"{workflow.session_id}.json"
+                path.write_text(json.dumps(workflow_data, ensure_ascii=False, indent=2), encoding="utf-8")
                 yield {"type": "skill_learned", "skill": skill}
 
     # ------------------------------------------------------------------

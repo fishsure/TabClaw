@@ -17,6 +17,10 @@ from agent.executor import AgentExecutor
 from agent.planner import Planner
 from agent.memory import MemoryManager
 from agent.multi_agent import MultiAgentExecutor
+from agent.workflow_recorder import (
+    update_workflow_feedback, list_workflows, load_workflow,
+    find_recurring_patterns, get_growth_profile,
+)
 from skills.registry import SkillRegistry
 
 # ---------------------------------------------------------------------------
@@ -454,6 +458,55 @@ async def summarize_memory():
 
     resp = await llm.chat([{"role": "user", "content": prompt}])
     return {"summary": (resp.content or "").strip()}
+
+
+# ---------------------------------------------------------------------------
+# Workflow & feedback endpoints
+# ---------------------------------------------------------------------------
+
+class FeedbackBody(BaseModel):
+    feedback: str   # "good" or "bad"
+    detail: str = ""
+
+
+@app.post("/api/workflow/{session_id}/feedback")
+async def workflow_feedback(session_id: str, body: FeedbackBody):
+    if body.feedback not in ("good", "bad"):
+        raise HTTPException(400, "feedback must be 'good' or 'bad'")
+    ok = update_workflow_feedback(session_id, body.feedback, body.detail)
+    if not ok:
+        raise HTTPException(404, "Workflow not found")
+    return {"status": "ok", "session_id": session_id, "feedback": body.feedback}
+
+
+@app.get("/api/workflows")
+async def get_workflows(limit: int = 50):
+    return list_workflows(limit)
+
+
+@app.get("/api/workflow/{session_id}")
+async def get_workflow(session_id: str):
+    data = load_workflow(session_id)
+    if not data:
+        raise HTTPException(404, "Workflow not found")
+    return data
+
+
+@app.get("/api/growth/profile")
+async def growth_profile():
+    profile = get_growth_profile()
+    profile["skills_stats"] = skill_registry.get_skill_stats()
+    return profile
+
+
+@app.get("/api/growth/patterns")
+async def growth_patterns():
+    return find_recurring_patterns(min_occurrences=2)
+
+
+@app.get("/api/skills/stats")
+async def skill_stats():
+    return skill_registry.get_skill_stats()
 
 
 # ---------------------------------------------------------------------------

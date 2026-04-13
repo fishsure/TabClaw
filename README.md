@@ -57,6 +57,14 @@ After completing a non-trivial task, TabClaw reflects on what it did and distils
 
 <p align="center"><img src="asset/skill.png" alt="Skill Learning" width="75%" /></p>
 
+**Growth Dashboard (self-evolution report)** — domain proficiency, efficiency trends, milestones, and the full learning timeline.
+
+<p align="center"><img src="asset/grow.png" alt="Growth Dashboard — self-evolution report" width="75%" /></p>
+
+**New skill generated during self-evolution** — when patterns repeat and feedback accumulates, TabClaw surfaces new or upgraded package skills you can adopt from the Skills panel.
+
+<p align="center"><img src="asset/new_skill.PNG" alt="New skill generated during self-evolution" width="75%" /></p>
+
 ### 💾 It remembers your preferences
 TabClaw picks up on how you like to work — preferred metrics, output format, domain terminology — and carries that context into every future conversation. You can view, edit, or clear memory anytime from the sidebar.
 

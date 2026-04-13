@@ -550,6 +550,58 @@ description: "{description}"
         pkg = next((p for p in self._packages if p["slug"] == slug), None)
         return pkg or {"slug": slug, "name": parsed["name"], "status": "installed"}
 
+    def upgrade_package(self, slug: str, new_body: str, reason: str = "") -> Dict:
+        """Upgrade an existing skill: back up old version, write new body, bump version."""
+        dest = SKILLS_DIR / slug
+        if not dest.exists():
+            raise ValueError(f"Package skill '{slug}' not found")
+
+        meta_path = dest / "_meta.json"
+        meta: Dict[str, Any] = {}
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        old_version = meta.get("version", 1)
+        old_skill_md = (dest / "SKILL.md").read_text(encoding="utf-8")
+        (dest / f"SKILL.v{old_version}.md").write_text(old_skill_md, encoding="utf-8")
+
+        parsed = _parse_skill_md(old_skill_md)
+        new_skill_md = f"""---
+name: {parsed['name']}
+description: "{parsed['description']}"
+---
+
+{new_body}
+"""
+        (dest / "SKILL.md").write_text(new_skill_md, encoding="utf-8")
+
+        meta["version"] = old_version + 1
+        meta["upgraded_at"] = datetime.now(timezone.utc).isoformat()
+        meta["upgrade_reason"] = reason
+        history = meta.get("upgrade_history", [])
+        history.append({
+            "from_version": old_version,
+            "to_version": old_version + 1,
+            "reason": reason,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        meta["upgrade_history"] = history
+        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        self._packages = self._load_packages()
+        pkg = next((p for p in self._packages if p["slug"] == slug), None)
+        return {
+            "slug": slug,
+            "name": parsed["name"],
+            "version": old_version + 1,
+            "reason": reason,
+            "status": "upgraded",
+            **({"description": pkg["description"]} if pkg else {}),
+        }
+
     def delete_package(self, slug: str) -> Dict:
         dest = SKILLS_DIR / slug
         if not dest.exists():

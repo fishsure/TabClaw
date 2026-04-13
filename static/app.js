@@ -164,6 +164,7 @@ class TabClawApp {
     document.getElementById('execute-plan-btn').addEventListener('click', () => this._executePlan());
 
     // Skills
+    document.getElementById('discover-skill-btn').addEventListener('click', () => this._discoverSkills());
     document.getElementById('add-skill-btn').addEventListener('click', () => this.showSkillModal());
     document.getElementById('skill-save-btn').addEventListener('click', () => this._saveSkill());
     document.getElementById('clear-skills-btn').addEventListener('click', () => this._clearAllSkills());
@@ -1235,20 +1236,24 @@ class TabClawApp {
     // Package skills — ClawHub / OpenClaw-compatible SKILL.md format
     html += '<hr class="divider"><div class="skill-section-title">Package Skills</div>';
     if (!packages || !packages.length) {
-      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip or <b>+ Add</b> to create one.</div>';
+      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip, <b>+ Add</b> to create, or <b>🔍</b> to discover from usage.</div>';
     } else {
       html += packages.map(s => {
         const sourceLabel = s.source === 'distilled'
           ? '<span class="skill-badge-distilled" title="Auto-learned from session">🧠</span>'
+          : s.source === 'discovered'
+          ? '<span class="skill-badge-distilled" title="Discovered from patterns">🔍</span>'
           : '';
+        const vLabel = s.version ? ` <span class="skill-version">v${this._esc(String(s.version))}</span>` : '';
         return `
         <div class="skill-item${s.enabled ? '' : ' skill-disabled'}">
           <span class="skill-dot package"></span>
           <div class="skill-info">
-            <div class="skill-name">${sourceLabel}${this._esc(s.name)}${s.version ? ` <span class="skill-version">v${this._esc(s.version)}</span>` : ''}</div>
+            <div class="skill-name">${sourceLabel}${this._esc(s.name)}${vLabel}</div>
             <div class="skill-desc">${this._esc(s.description)}</div>
           </div>
           <div class="skill-actions">
+            <button class="btn icon-only sm" title="Improve with feedback" onclick="app._improveSkill('${this._esc(s.slug)}')">⬆</button>
             <button class="btn icon-only sm" title="${s.enabled ? 'Disable' : 'Enable'}" onclick="app._togglePackageSkill('${this._esc(s.slug)}', ${!s.enabled})">${s.enabled ? '⏸' : '▶'}</button>
             <button class="btn icon-only sm danger" onclick="app._deletePackageSkill('${this._esc(s.slug)}')">🗑</button>
           </div>
@@ -1379,6 +1384,76 @@ class TabClawApp {
       this._notify('Package skill deleted', 'success');
       await this._loadSkills();
     } catch (e) { this._notify(e.message, 'error'); }
+  }
+
+  async _discoverSkills() {
+    const btn = document.getElementById('discover-skill-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    try {
+      const data = await this._api('POST', '/api/skills/discover');
+      if (!data.suggestions || !data.suggestions.length) {
+        this._notify('暂未发现新的可提取模式。继续使用，TabClaw 会自动发现重复模式。', 'info');
+        return;
+      }
+      this._showDiscoverResults(data.suggestions);
+    } catch (e) {
+      this._notify(`Discovery failed: ${e.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔍';
+    }
+  }
+
+  _showDiscoverResults(suggestions) {
+    const container = this._chatContainer();
+    const el = document.createElement('div');
+    el.className = 'discover-results';
+    el.innerHTML = `
+      <div class="discover-header">🔍 发现 ${suggestions.length} 个可提取的分析模式</div>
+      ${suggestions.map((s, i) => `
+        <div class="discover-item" id="discover-item-${i}">
+          <div class="discover-item-name">${this._esc(s.name)}</div>
+          <div class="discover-item-desc">${this._esc(s.description)}</div>
+          <div class="discover-item-actions">
+            <button class="btn sm primary" onclick="app._acceptDiscoveredSkill(${i}, ${JSON.stringify(JSON.stringify(s))})">✓ 采纳为技能</button>
+            <button class="btn sm" onclick="document.getElementById('discover-item-${i}').style.display='none'">忽略</button>
+          </div>
+        </div>`).join('')}`;
+    container.appendChild(el);
+    this._scrollChat();
+  }
+
+  async _acceptDiscoveredSkill(index, skillJson) {
+    const skill = JSON.parse(skillJson);
+    try {
+      await this._api('POST', '/api/skills/accept', {
+        name: skill.name,
+        description: skill.description,
+        body: skill.body,
+      });
+      const item = document.getElementById(`discover-item-${index}`);
+      if (item) item.innerHTML = `<span class="feedback-done good">✓ 已创建技能「${this._esc(skill.name)}」</span>`;
+      this._notify(`New skill created: ${skill.name}`, 'success');
+      await this._loadSkills();
+    } catch (e) {
+      this._notify(e.message, 'error');
+    }
+  }
+
+  async _improveSkill(slug) {
+    this._notify('正在分析反馈并改进技能…', 'info');
+    try {
+      const result = await this._api('POST', `/api/skills/package/${slug}/improve`);
+      if (result.status === 'upgraded') {
+        this._notify(`技能已升级到 v${result.version}：${result.reason}`, 'success');
+        await this._loadSkills();
+      } else {
+        this._notify('未发现可改进之处', 'info');
+      }
+    } catch (e) {
+      this._notify(e.message, 'error');
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -1856,11 +1931,16 @@ class TabClawApp {
     const container = document.getElementById(`feedback-${msgId}`);
     if (!container) return;
     try {
-      await this._api('POST', `/api/workflow/${sessionId}/feedback`, { feedback });
+      const result = await this._api('POST', `/api/workflow/${sessionId}/feedback`, { feedback });
       container.innerHTML = feedback === 'good'
         ? '<span class="feedback-done good">👍 感谢反馈</span>'
         : '<span class="feedback-done bad">👎 已记录，将用于改进</span>';
       this._notify(feedback === 'good' ? '感谢正面反馈！' : '已记录，TabClaw 将从中学习', 'success');
+      if (result.skill_upgraded) {
+        const u = result.skill_upgraded;
+        this._notify(`技能「${u.name}」已根据反馈自动升级到 v${u.version}`, 'success');
+        await this._loadSkills();
+      }
     } catch (e) {
       this._notify('反馈提交失败', 'error');
     }

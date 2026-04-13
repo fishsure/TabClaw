@@ -15,6 +15,31 @@ class AgentExecutor:
         self.memory = memory_manager
         self.distiller = SkillDistiller(llm, skill_registry)
         self.max_iterations = 12
+        self._reuse_notified = False
+
+    def _check_skill_reuse(self, tool_calls_log: List[Dict]) -> tuple:
+        """Check if the current tool sequence matches a distilled skill pattern.
+        Returns (skill_name, skill_slug) or (None, None)."""
+        if len(tool_calls_log) < 2:
+            return None, None
+        current_tools = {entry["name"] for entry in tool_calls_log} - {"table_info"}
+        if len(current_tools) < 2:
+            return None, None
+        for pkg in self.skills._packages:
+            if not pkg.get("enabled") or pkg.get("source") not in ("distilled",):
+                continue
+            body = pkg.get("body", "")
+            skill_tools = set(re.findall(r'`(\w+)`', body)) & {
+                "filter_rows", "select_columns", "aggregate", "sort_table",
+                "merge_tables", "pivot_table", "add_column", "describe_stats",
+                "find_values", "value_counts", "correlation_matrix",
+            }
+            if len(skill_tools) < 2:
+                continue
+            overlap = current_tools & skill_tools
+            if len(overlap) >= 2 and len(overlap) / len(skill_tools) >= 0.5:
+                return pkg["name"], pkg["slug"]
+        return None, None
 
     # ------------------------------------------------------------------
     # Public entry points
@@ -32,6 +57,7 @@ class AgentExecutor:
         """Execute user request directly (no plan)."""
         table_names = [t["name"] for t in tables.values()]
         workflow = WorkflowRecord(message, table_names)
+        self._reuse_notified = False
 
         hook_context = await asyncio.to_thread(self.skills.run_event_hooks, "user_prompt")
         messages = self._build_messages(message, tables, history, hook_context)
@@ -58,6 +84,18 @@ class AgentExecutor:
                     produced_table=produced,
                     duration_ms=elapsed,
                 ))
+                if not self._reuse_notified:
+                    skill_name, skill_slug = self._check_skill_reuse(tool_calls_log)
+                    if skill_name:
+                        self._reuse_notified = True
+                        workflow.skills_used.append(skill_slug)
+                        self.skills.record_usage(skill_slug)
+                        yield {
+                            "type": "skill_reused",
+                            "skill_name": skill_name,
+                            "skill_slug": skill_slug,
+                            "message": f"检测到与已学技能「{skill_name}」匹配的分析模式，正在复用",
+                        }
             elif event["type"] == "final_text":
                 final_text = event.get("content", "")
 

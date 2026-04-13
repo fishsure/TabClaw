@@ -2031,3 +2031,40 @@ html.light .compact-notice { background: var(--primary-dark)08; }
 }
 .growth-event-date { color: var(--text-dim); font-size: 11px; width: 80px; flex-shrink: 0; }
 .growth-event-text { color: var(--text-muted); }
+
+/* ── Discover results ─────────────────────────────────────────────── */
+.discover-results {
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.discover-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+.discover-item {
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+.discover-item-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.discover-item-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 6px;
+}
+.discover-item-actions {
+  display: flex;
+  gap: 6px;
+}

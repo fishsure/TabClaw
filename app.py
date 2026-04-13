@@ -383,6 +383,38 @@ async def toggle_skill_package(slug: str, body: PackageToggleBody):
         raise HTTPException(404, str(e))
 
 
+@app.post("/api/skills/discover")
+async def discover_skills():
+    """Scan workflow history for recurring patterns and suggest new skills."""
+    suggestions = await executor.distiller.discover()
+    return {"suggestions": suggestions, "count": len(suggestions)}
+
+
+class AcceptSkillBody(BaseModel):
+    name: str
+    description: str
+    body: str
+
+
+@app.post("/api/skills/accept")
+async def accept_discovered_skill(req: AcceptSkillBody):
+    """Create a skill from a discovery suggestion."""
+    if not req.name or not req.body:
+        raise HTTPException(400, "name and body are required")
+    return skill_registry.create_package(
+        req.name, req.description, req.body, source="discovered",
+    )
+
+
+@app.post("/api/skills/package/{slug}/improve")
+async def improve_skill(slug: str):
+    """Trigger LLM-driven improvement of a skill based on bad-feedback workflows."""
+    result = await executor.distiller.try_improve(slug)
+    if not result:
+        return {"status": "no_improvement", "reason": "No actionable feedback found"}
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Memory endpoints
 # ---------------------------------------------------------------------------
@@ -476,7 +508,28 @@ async def workflow_feedback(session_id: str, body: FeedbackBody):
     ok = update_workflow_feedback(session_id, body.feedback, body.detail)
     if not ok:
         raise HTTPException(404, "Workflow not found")
-    return {"status": "ok", "session_id": session_id, "feedback": body.feedback}
+
+    result: Dict[str, Any] = {"status": "ok", "session_id": session_id, "feedback": body.feedback}
+
+    wf = load_workflow(session_id)
+    skills_used = wf.get("skills_used", []) if wf else []
+    for slug in skills_used:
+        skill_registry.record_feedback(slug, body.feedback)
+        if body.feedback == "bad":
+            stats = next(
+                (s for s in skill_registry.get_skill_stats() if s["slug"] == slug), None
+            )
+            if stats and stats.get("failure_count", 0) >= 2:
+                upgrade = await executor.distiller.try_improve(slug)
+                if upgrade and upgrade.get("status") == "upgraded":
+                    result["skill_upgraded"] = {
+                        "slug": slug,
+                        "name": upgrade.get("name", slug),
+                        "version": upgrade.get("version"),
+                        "reason": upgrade.get("reason", ""),
+                    }
+
+    return result
 
 
 @app.get("/api/workflows")

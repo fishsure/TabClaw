@@ -7,6 +7,8 @@ setting.txt
 data/memory.json
 # All skills stored as SKILL.md packages (data/skills/<slug>/)
 data/skills/
+# Workflow history (runtime state)
+data/workflows/
 # Workspace: persisted learnings / notes written by skills at runtime
 data/workspace/
 

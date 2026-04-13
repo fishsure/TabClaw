@@ -74,7 +74,7 @@
       <div class="sidebar-panel-header">
         <span>Skills</span>
         <div style="display:flex;gap:4px">
-          <button class="btn sm" id="discover-skill-btn" title="Discover new skills from usage patterns">🔍</button>
+          <button class="btn sm" id="discover-skill-btn" title="从历史分析中发现重复模式并提炼为可复用技能">🔍</button>
           <button class="btn sm" id="import-skill-btn" title="Import skill package (.zip)">📦 Import</button>
           <button class="btn sm danger" id="clear-skills-btn" title="Clear all package skills">🗑 Clear</button>
           <button class="btn sm primary" id="add-skill-btn">+ Add</button>
@@ -111,6 +111,9 @@
         </svg>
         <span>成长报告</span>
       </button>
+      <button class="btn growth-btn guide-help-btn" id="guide-help-btn" onclick="app.showGuideModal()" title="了解 TabClaw 如何自我进化">
+        <span>❓ 使用指南</span>
+      </button>
     </div>
     <div class="lab-credit" id="lab-credit">中国科学技术大学认知智能全国重点实验室 AGI 组</div>
   </aside>
@@ -128,6 +131,9 @@
           <div class="chip" onclick="app.insertSuggestion(this)">Find rows where value is null</div>
           <div class="chip" onclick="app.insertSuggestion(this)">Merge tables on a common column</div>
           <div class="chip" onclick="app.insertSuggestion(this)">Show top 10 rows sorted by first numeric column</div>
+        </div>
+        <div class="chat-empty-tip" onclick="app.showGuideModal()">
+          <span>🧬</span> TabClaw 越用越聪明 — 点这里了解自进化机制如何运作
         </div>
       </div>
     </div>
@@ -376,6 +382,78 @@
     <div class="modal-footer">
       <button class="btn" onclick="app.hidePkgDetailModal()">Close</button>
       <button class="btn primary" id="pkg-detail-improve-btn">⬆ Improve</button>
+    </div>
+  </div>
+</div>
+
+<!-- How-it-works guide modal -->
+<div id="guide-modal" class="modal-overlay hidden">
+  <div class="modal" style="width:640px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🧬 TabClaw 如何越用越聪明</div>
+        <div class="modal-subtitle">了解自进化流程，让 TabClaw 成为你的专属数据分析师</div>
+      </div>
+      <button class="modal-close" onclick="app.hideGuideModal()">×</button>
+    </div>
+    <div class="modal-body" id="guide-content">
+      <div class="guide-flow">
+        <div class="guide-step">
+          <div class="guide-step-num">1</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">📊 上传表格，提出问题</div>
+            <div class="guide-step-desc">上传 CSV 或 Excel 文件，用自然语言描述你想要的分析。TabClaw 会制定计划、调用工具、给出结论。</div>
+          </div>
+        </div>
+        <div class="guide-arrow">↓</div>
+        <div class="guide-step">
+          <div class="guide-step-num">2</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">👍👎 给出反馈</div>
+            <div class="guide-step-desc">每次分析完成后，点击 <strong>👍</strong> 或 <strong>👎</strong> 告诉 TabClaw 效果如何。这是它学习的核心信号——不满意的结果会驱动改进。</div>
+          </div>
+        </div>
+        <div class="guide-arrow">↓</div>
+        <div class="guide-step">
+          <div class="guide-step-num">3</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">🧠 自动学习技能</div>
+            <div class="guide-step-desc">开启底部的 <strong>Skill Learning</strong> 开关后，TabClaw 会从复杂任务中自动提炼可复用的分析技能。你也可以点击 Skills 面板的 <strong>🔍</strong> 按钮，主动扫描历史记录发现重复模式并采纳为技能。</div>
+          </div>
+        </div>
+        <div class="guide-arrow">↓</div>
+        <div class="guide-step">
+          <div class="guide-step-num">4</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">⬆ 反馈驱动进化</div>
+            <div class="guide-step-desc">当某个技能累计收到 <strong>2 次以上 👎</strong> 时，TabClaw 会自动分析失败原因并升级该技能。技能版本号递增，旧版本保留。你也可以在技能详情里手动点 <strong>⬆ Improve</strong> 触发改进。</div>
+          </div>
+        </div>
+        <div class="guide-arrow">↓</div>
+        <div class="guide-step">
+          <div class="guide-step-num">5</div>
+          <div class="guide-step-body">
+            <div class="guide-step-title">📈 越来越好</div>
+            <div class="guide-step-desc">下次问类似问题时，进化后的技能会自动注入 Agent 的思维链，让分析更准确、更有条理。点击侧边栏 <strong>成长报告</strong> 查看领域熟练度、效率变化和里程碑。</div>
+          </div>
+        </div>
+      </div>
+      <div class="guide-tips">
+        <div class="guide-tips-title">💡 快速上手建议</div>
+        <ul>
+          <li><strong>多给反馈</strong>——👍👎 是 TabClaw 进化的燃料</li>
+          <li><strong>开启 Skill Learning</strong>——让系统自动从每次分析中学习</li>
+          <li><strong>定期点 🔍 发现技能</strong>——从历史中挖掘你还没注意到的分析模式</li>
+          <li><strong>查看成长报告</strong>——观察 TabClaw 在各个领域的进步</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+        <input type="checkbox" id="guide-dont-show" /> 下次不再自动显示
+      </label>
+      <div style="flex:1"></div>
+      <button class="btn primary" onclick="app.hideGuideModal()">开始使用</button>
     </div>
   </div>
 </div>

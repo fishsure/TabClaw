@@ -195,7 +195,8 @@ class TabClawApp {
     });
 
     // Close modals on overlay click
-    ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal'].forEach(id => {
+    const allModals = ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal', 'guide-modal'];
+    allModals.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('click', e => {
         if (e.target.id === id) this._closeModalById(id);
@@ -205,12 +206,17 @@ class TabClawApp {
     // Escape key closes modals
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
-        ['plan-modal', 'table-modal', 'skill-modal', 'memory-modal', 'demo-modal', 'growth-modal', 'pkg-detail-modal'].forEach(id => {
+        allModals.forEach(id => {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) this._closeModalById(id);
         });
       }
     });
+
+    // First-visit guide
+    if (!localStorage.getItem('tabclaw_guide_dismissed')) {
+      setTimeout(() => this.showGuideModal(), 800);
+    }
   }
 
   _closeModalById(id) {
@@ -223,6 +229,7 @@ class TabClawApp {
     else if (id === 'demo-modal') this.hideDemoModal();
     else if (id === 'growth-modal') this.hideGrowthModal();
     else if (id === 'pkg-detail-modal') this.hidePkgDetailModal();
+    else if (id === 'guide-modal') this.hideGuideModal();
   }
 
   _autoresize(textarea) {
@@ -1237,7 +1244,15 @@ class TabClawApp {
     // Package skills — ClawHub / OpenClaw-compatible SKILL.md format
     html += '<hr class="divider"><div class="skill-section-title">Package Skills</div>';
     if (!packages || !packages.length) {
-      html += '<div class="empty-state">No package skills installed.<br>Click <b>📦 Import</b> to load a .zip, <b>+ Add</b> to create, or <b>🔍</b> to discover from usage.</div>';
+      html += `<div class="empty-state skill-empty-guide">
+        <div style="margin-bottom:8px">还没有学会任何技能</div>
+        <div class="skill-empty-steps">
+          <div>1️⃣ 用 TabClaw 分析几次表格</div>
+          <div>2️⃣ 给出 👍👎 反馈</div>
+          <div>3️⃣ 点上方 <b>🔍</b> 从历史中发现技能</div>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:var(--text-dim)">或者开启底部 <b>Skill Learning</b> 让系统自动学习</div>
+      </div>`;
     } else {
       html += packages.map(s => {
         const sourceLabel = s.source === 'distilled'
@@ -1406,6 +1421,7 @@ class TabClawApp {
   }
 
   _showDiscoverResults(suggestions) {
+    this._discoveredSuggestions = suggestions;
     const container = this._chatContainer();
     const el = document.createElement('div');
     el.className = 'discover-results';
@@ -1416,7 +1432,7 @@ class TabClawApp {
           <div class="discover-item-name">${this._esc(s.name)}</div>
           <div class="discover-item-desc">${this._esc(s.description)}</div>
           <div class="discover-item-actions">
-            <button class="btn sm primary" onclick="app._acceptDiscoveredSkill(${i}, ${JSON.stringify(JSON.stringify(s))})">✓ 采纳为技能</button>
+            <button class="btn sm primary" onclick="app._acceptDiscoveredSkill(${i})">✓ 采纳为技能</button>
             <button class="btn sm" onclick="document.getElementById('discover-item-${i}').style.display='none'">忽略</button>
           </div>
         </div>`).join('')}`;
@@ -1424,8 +1440,9 @@ class TabClawApp {
     this._scrollChat();
   }
 
-  async _acceptDiscoveredSkill(index, skillJson) {
-    const skill = JSON.parse(skillJson);
+  async _acceptDiscoveredSkill(index) {
+    const skill = this._discoveredSuggestions && this._discoveredSuggestions[index];
+    if (!skill) { this._notify('技能数据丢失，请重新发现', 'error'); return; }
     try {
       await this._api('POST', '/api/skills/accept', {
         name: skill.name,
@@ -1986,10 +2003,11 @@ class TabClawApp {
     div.className = 'feedback-actions';
     div.id = `feedback-${msgId}`;
     div.innerHTML = `
-      <button class="feedback-btn good" onclick="app.sendFeedback('${sessionId}', 'good', '${msgId}')" title="有用">
+      <span class="feedback-hint">这次分析怎么样？你的反馈是 TabClaw 进化的燃料</span>
+      <button class="feedback-btn good" onclick="app.sendFeedback('${sessionId}', 'good', '${msgId}')" title="分析准确、有帮助">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
       </button>
-      <button class="feedback-btn bad" onclick="app.sendFeedback('${sessionId}', 'bad', '${msgId}')" title="不准确">
+      <button class="feedback-btn bad" onclick="app.sendFeedback('${sessionId}', 'bad', '${msgId}')" title="结果不准确，TabClaw 将从中学习改进">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>
       </button>`;
     body.appendChild(div);
@@ -2181,7 +2199,19 @@ class TabClawApp {
         ${toolsHtml}
         ${eventsHtml}
         ${isEmpty
-          ? '<div class="empty-state" style="margin-top:20px">还没有分析记录。开始使用 TabClaw 后，这里会展示成长轨迹。</div>'
+          ? `<div class="growth-empty-state">
+              <div class="growth-empty-title">还没有成长数据</div>
+              <div class="growth-empty-flow">
+                <div class="growth-empty-step">📊 上传表格提问</div>
+                <div class="growth-empty-arrow">→</div>
+                <div class="growth-empty-step">👍👎 给出反馈</div>
+                <div class="growth-empty-arrow">→</div>
+                <div class="growth-empty-step">🧠 自动学习技能</div>
+                <div class="growth-empty-arrow">→</div>
+                <div class="growth-empty-step">📈 越来越准</div>
+              </div>
+              <div class="growth-empty-hint">开始使用 TabClaw 后，这里会展示领域熟练度、效率变化和学习里程碑。</div>
+            </div>`
           : ''}`;
     } catch (e) {
       content.innerHTML = `<div style="padding:20px;color:var(--red)">${this._esc(e.message)}</div>`;
@@ -2191,6 +2221,24 @@ class TabClawApp {
   hideGrowthModal() {
     const modal = document.getElementById('growth-modal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  // -----------------------------------------------------------------------
+  // Guide modal
+  // -----------------------------------------------------------------------
+
+  showGuideModal() {
+    const modal = document.getElementById('guide-modal');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  hideGuideModal() {
+    const modal = document.getElementById('guide-modal');
+    if (modal) modal.classList.add('hidden');
+    const chk = document.getElementById('guide-dont-show');
+    if (chk && chk.checked) {
+      localStorage.setItem('tabclaw_guide_dismissed', '1');
+    }
   }
 }
 

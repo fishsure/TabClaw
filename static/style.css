@@ -2227,3 +2227,154 @@ html.light .compact-notice { background: var(--primary-dark)08; }
   font-weight: 600;
   margin-top: 4px;
 }
+
+/* ── Guide modal ──────────────────────────────────────────────────── */
+.guide-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.guide-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.guide-step-num {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+}
+.guide-step-body { flex: 1; }
+.guide-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.guide-step-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.guide-step-desc strong {
+  color: var(--text);
+}
+.guide-arrow {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 2px 0;
+  line-height: 1;
+}
+.guide-tips {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #3fb95010;
+  border: 1px solid #3fb95030;
+  border-radius: var(--radius-sm);
+}
+.guide-tips-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+.guide-tips ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+.guide-tips li strong { color: var(--text); }
+
+.guide-help-btn {
+  font-size: 11px !important;
+  opacity: 0.7;
+}
+.guide-help-btn:hover { opacity: 1; }
+
+/* ── Chat empty state tip ─────────────────────────────────────────── */
+.chat-empty-tip {
+  margin-top: 16px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--primary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--primary);
+  opacity: 0.7;
+  transition: opacity .2s;
+  text-align: center;
+}
+.chat-empty-tip:hover { opacity: 1; }
+
+/* ── Feedback hint text ───────────────────────────────────────────── */
+.feedback-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+/* ── Skills empty guide ───────────────────────────────────────────── */
+.skill-empty-guide {
+  text-align: left !important;
+  padding: 12px !important;
+}
+.skill-empty-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Growth dashboard empty state ─────────────────────────────────── */
+.growth-empty-state {
+  padding: 24px 16px;
+  text-align: center;
+}
+.growth-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.growth-empty-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.growth-empty-step {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.growth-empty-arrow {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+.growth-empty-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}

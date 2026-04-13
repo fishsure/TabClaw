@@ -20,6 +20,7 @@ from agent.multi_agent import MultiAgentExecutor
 from agent.workflow_recorder import (
     update_workflow_feedback, list_workflows, load_workflow,
     find_recurring_patterns, get_growth_profile,
+    add_custom_domain, list_domains,
 )
 from skills.registry import SkillRegistry
 
@@ -41,6 +42,27 @@ tables: Dict[str, Dict] = {}          # table_id -> {name, df, source, filename}
 chat_history: List[Dict] = []
 
 AUTO_COMPACT_THRESHOLD = 20   # messages before auto-compaction kicks in
+
+# Manual / blank tables (in-browser editing)
+MANUAL_MAX_ROWS = 500
+MANUAL_MAX_COLS = 50
+MANUAL_FETCH_CAP = 2000
+
+
+def _sanitize_column_names(names: List[str]) -> List[str]:
+    out: List[str] = []
+    for i, raw in enumerate(names):
+        base = str(raw).strip() if raw is not None else ""
+        if not base:
+            base = f"Col{i + 1}"
+        cand = base
+        n = 2
+        while cand in out:
+            cand = f"{base}_{n}"
+            n += 1
+        out.append(cand)
+    return out
+
 
 # Static files
 STATIC_DIR = Path(__file__).parent / "static"
@@ -89,6 +111,41 @@ async def upload_table(file: UploadFile = File(...)):
     }
 
 
+class CreateTableBody(BaseModel):
+    name: str = "Untitled"
+    rows: int = 8
+    cols: int = 6
+
+
+class UpdateTableBody(BaseModel):
+    name: Optional[str] = None
+    columns: List[str]
+    data: List[List[Any]]
+
+
+@app.post("/api/tables/create")
+async def create_blank_table(body: CreateTableBody):
+    """Create an empty table for manual entry or paste (stored like uploaded tables)."""
+    nrows = max(0, min(int(body.rows), MANUAL_MAX_ROWS))
+    ncols = max(1, min(int(body.cols), MANUAL_MAX_COLS))
+    col_names = [f"Col{i + 1}" for i in range(ncols)]
+    if nrows == 0:
+        df = pd.DataFrame(columns=col_names)
+    else:
+        df = pd.DataFrame([[""] * ncols for _ in range(nrows)], columns=col_names)
+    table_id = uuid.uuid4().hex[:8]
+    name = (body.name or "").strip() or "Untitled"
+    tables[table_id] = {"name": name, "df": df, "source": "manual"}
+    return {
+        "table_id": table_id,
+        "name": name,
+        "rows": len(df),
+        "cols": len(df.columns),
+        "columns": df.columns.tolist(),
+        "source": "manual",
+    }
+
+
 @app.get("/api/tables")
 async def list_tables():
     result = []
@@ -109,20 +166,70 @@ async def list_tables():
 async def get_table(table_id: str, page: int = 1, page_size: int = 50):
     if table_id not in tables:
         raise HTTPException(404, "Table not found")
-    df = tables[table_id]["df"]
+    t = tables[table_id]
+    df = t["df"]
+    source = t.get("source", "unknown")
     total = len(df)
-    start = (page - 1) * page_size
-    end = start + page_size
+    if source == "manual":
+        end = min(total, MANUAL_FETCH_CAP)
+        start = 0
+        page = 1
+        page_size = max(end, 1)
+        total_pages = 1
+    else:
+        start = (page - 1) * page_size
+        end = start + page_size
+        total_pages = max(1, -(-total // page_size))
     return {
         "table_id": table_id,
-        "name": tables[table_id]["name"],
+        "name": t["name"],
+        "source": source,
         "total_rows": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": max(1, -(-total // page_size)),
+        "total_pages": total_pages,
         "columns": df.columns.tolist(),
         "dtypes": {c: str(t) for c, t in df.dtypes.items()},
         "rows": df.iloc[start:end].fillna("").to_dict("records"),
+    }
+
+
+@app.put("/api/tables/{table_id}")
+async def update_manual_table(table_id: str, body: UpdateTableBody):
+    """Replace data for a manually created table (for in-app editing / paste)."""
+    if table_id not in tables:
+        raise HTTPException(404, "Table not found")
+    t = tables[table_id]
+    if t.get("source") != "manual":
+        raise HTTPException(400, "Only manually created tables can be edited here")
+
+    cols = _sanitize_column_names([str(c) for c in body.columns])
+    if not cols:
+        raise HTTPException(400, "At least one column is required")
+    if len(cols) > MANUAL_MAX_COLS:
+        raise HTTPException(400, f"Too many columns (max {MANUAL_MAX_COLS})")
+
+    for i, row in enumerate(body.data):
+        if len(row) != len(cols):
+            raise HTTPException(400, f"Row {i}: expected {len(cols)} cells, got {len(row)}")
+    if len(body.data) > MANUAL_MAX_ROWS:
+        raise HTTPException(400, f"Too many rows (max {MANUAL_MAX_ROWS})")
+
+    str_rows: List[List[str]] = []
+    for row in body.data:
+        str_rows.append(["" if v is None else str(v) for v in row])
+
+    df = pd.DataFrame(str_rows, columns=cols) if str_rows else pd.DataFrame(columns=cols)
+    t["df"] = df
+    if body.name is not None:
+        t["name"] = body.name.strip() or t["name"]
+    return {
+        "table_id": table_id,
+        "name": t["name"],
+        "rows": len(df),
+        "cols": len(df.columns),
+        "columns": df.columns.tolist(),
+        "source": "manual",
     }
 
 
@@ -156,6 +263,8 @@ class ChatRequest(BaseModel):
     message: str
     code_tool: bool = False
     skill_learn: bool = False
+    implicit_feedback: bool = False
+    last_workflow_id: Optional[str] = None
 
 
 class PlanRequest(BaseModel):
@@ -193,6 +302,30 @@ async def chat(request: ChatRequest):
     use_multi = multi_executor.should_activate(request.message, tables)
 
     async def generate():
+        # Implicit feedback: classify the new message against the previous workflow
+        if request.implicit_feedback and request.last_workflow_id:
+            wf = load_workflow(request.last_workflow_id)
+            if wf:
+                prev_context = wf.get("conclusion") or wf.get("user_message", "")
+                if prev_context:
+                    verdict = await _classify_implicit_feedback(request.message, prev_context)
+                    if verdict in ("good", "bad"):
+                        already_rated = bool(wf.get("user_feedback"))
+                        if not already_rated:
+                            update_workflow_feedback(
+                                request.last_workflow_id, verdict, "implicit"
+                            )
+                            wf2 = load_workflow(request.last_workflow_id)
+                            skills_used = wf2.get("skills_used", []) if wf2 else []
+                            for slug in skills_used:
+                                skill_registry.record_feedback(slug, verdict)
+                        yield _sse({
+                            "type": "implicit_feedback_applied",
+                            "session_id": request.last_workflow_id,
+                            "feedback": verdict,
+                            "already_rated": already_rated,
+                        })
+
         # Auto-compact: if history is long, summarise before the new request
         if len(chat_history) >= AUTO_COMPACT_THRESHOLD:
             old_count = len(chat_history)
@@ -279,6 +412,36 @@ async def execute_plan(request: ExecutePlanRequest):
 async def clear_history():
     chat_history.clear()
     return {"status": "cleared"}
+
+
+async def _classify_implicit_feedback(user_msg: str, prev_context: str) -> Optional[str]:
+    """Classify whether a user's new message implies positive/negative feedback on the previous response.
+
+    Returns 'good', 'bad', or None (neutral/unrelated).
+    Uses a minimal prompt to keep latency low.
+    """
+    prompt = (
+        "You are a feedback signal classifier. Given the previous AI response summary and the user's "
+        "next message, determine whether the user's message implicitly expresses satisfaction or "
+        "dissatisfaction with the previous response.\n\n"
+        f"Previous AI response summary:\n{prev_context[:600]}\n\n"
+        f"User's next message:\n{user_msg[:300]}\n\n"
+        "Classify the implicit signal:\n"
+        "- good: user expresses thanks, satisfaction, agreement, confirms it's correct, "
+        "or continues positively based on the result\n"
+        "- bad: user says it's wrong, incorrect, asks to redo, expresses frustration, "
+        "or corrects the AI's mistake\n"
+        "- neutral: user asks a completely new unrelated question, or the message carries no feedback signal\n\n"
+        "Reply with ONLY one word: good, bad, or neutral"
+    )
+    try:
+        resp = await llm.chat([{"role": "user", "content": prompt}])
+        result = (resp.content or "").strip().lower().split()[0] if resp.content else ""
+        if result in ("good", "bad"):
+            return result
+        return None
+    except Exception:
+        return None
 
 
 async def _do_compact(history: List[Dict]) -> Optional[str]:
@@ -586,6 +749,26 @@ async def growth_profile():
 @app.get("/api/growth/patterns")
 async def growth_patterns():
     return find_recurring_patterns(min_occurrences=2)
+
+
+@app.get("/api/growth/domains")
+async def get_domains():
+    """List all domains (built-in + custom)."""
+    return list_domains()
+
+
+class CustomDomainBody(BaseModel):
+    name: str
+    keywords: List[str]
+
+
+@app.post("/api/growth/domains")
+async def create_custom_domain(body: CustomDomainBody):
+    """Add or update a custom domain with keywords."""
+    if not body.name or not body.keywords:
+        raise HTTPException(400, "name and keywords are required")
+    result = add_custom_domain(body.name, body.keywords)
+    return {"status": "ok", "domains": result}
 
 
 @app.get("/api/skills/stats")

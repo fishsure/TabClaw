@@ -167,25 +167,63 @@ def find_recurring_patterns(min_occurrences: int = 2) -> List[Dict]:
 
 
 _DOMAIN_KEYWORDS: Dict[str, List[str]] = {
-    "销售分析": ["sales", "revenue", "profit", "销售", "收入", "利润", "营收", "业绩", "订单"],
-    "HR/人才": ["employee", "salary", "hr", "人才", "薪资", "绩效", "部门", "员工", "hiring"],
-    "财务报表": ["finance", "cost", "budget", "财务", "成本", "预算", "报表", "支出", "资产"],
-    "用户分析": ["user", "customer", "nps", "satisfaction", "用户", "客户", "满意度", "留存", "churn"],
-    "产品分析": ["product", "category", "rating", "产品", "品类", "评分", "库存", "SKU"],
-    "通用数据": [],
+    "销售分析": ["sales", "revenue", "profit", "销售", "收入", "利润", "营收", "业绩", "订单", "gmv"],
+    "HR/人才": ["employee", "salary", "hr", "人才", "薪资", "绩效", "部门", "员工", "hiring", "离职", "招聘"],
+    "财务报表": ["finance", "cost", "budget", "财务", "成本", "预算", "报表", "支出", "资产", "费用"],
+    "用户分析": ["user", "customer", "nps", "satisfaction", "用户", "客户", "满意度", "留存", "churn", "活跃"],
+    "产品分析": ["product", "category", "rating", "产品", "品类", "评分", "库存", "sku", "商品"],
+    "医疗健康": ["patient", "medical", "hospital", "患者", "医疗", "诊断", "病例", "健康", "药品"],
+    "教育培训": ["student", "score", "exam", "学生", "成绩", "考试", "课程", "教育", "培训"],
+    "物流运输": ["logistics", "shipping", "delivery", "物流", "运输", "配送", "仓储", "快递"],
+    "营销推广": ["marketing", "campaign", "ad", "广告", "营销", "推广", "投放", "转化", "roi"],
 }
+
+_CUSTOM_DOMAINS_PATH = Path(__file__).parent.parent / "data" / "custom_domains.json"
+
+
+def _load_custom_domains() -> Dict[str, List[str]]:
+    if _CUSTOM_DOMAINS_PATH.exists():
+        try:
+            return json.loads(_CUSTOM_DOMAINS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_custom_domains(domains: Dict[str, List[str]]):
+    _CUSTOM_DOMAINS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _CUSTOM_DOMAINS_PATH.write_text(
+        json.dumps(domains, ensure_ascii=False, indent=2), encoding="utf-8",
+    )
 
 
 def _classify_domain(user_message: str, tables: List[str]) -> str:
     text = (user_message + " " + " ".join(tables)).lower()
+    all_domains = {**_DOMAIN_KEYWORDS, **_load_custom_domains()}
     scores: Dict[str, int] = {}
-    for domain, keywords in _DOMAIN_KEYWORDS.items():
+    for domain, keywords in all_domains.items():
         if not keywords:
             continue
         scores[domain] = sum(1 for kw in keywords if kw in text)
     if not scores or max(scores.values()) == 0:
         return "通用数据"
     return max(scores, key=lambda d: scores[d])
+
+
+def add_custom_domain(name: str, keywords: List[str]) -> Dict[str, List[str]]:
+    """Add or update a user-defined domain with its keywords."""
+    custom = _load_custom_domains()
+    merged = list(set(custom.get(name, []) + keywords))
+    custom[name] = merged
+    _save_custom_domains(custom)
+    return custom
+
+
+def list_domains() -> Dict[str, List[str]]:
+    """Return all domains (built-in + custom)."""
+    result = {k: list(v) for k, v in _DOMAIN_KEYWORDS.items()}
+    result.update(_load_custom_domains())
+    return result
 
 
 def get_growth_profile() -> Dict[str, Any]:

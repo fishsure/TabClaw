@@ -70,6 +70,7 @@ class TabClawApp {
       planMode: true,
       codeToolEnabled: false,
       skillLearnEnabled: false,
+      implicitFeedbackEnabled: false,
       streaming: false,
       currentPlan: null,
       currentPlanMessage: '',
@@ -81,6 +82,11 @@ class TabClawApp {
       // Workflow tracking: maps msgId → session_id from backend
       currentWorkflowId: null,
     };
+
+    // Stores the workflow_id of the last completed response for implicit feedback
+    this._lastCompletedWorkflowId = null;
+    // Maps workflow session_id → feedback message DOM id (for implicit feedback UI updates)
+    this._workflowMsgMap = {};
 
     this._streamMsgId = null;
     this._streamBuffer = '';
@@ -127,6 +133,8 @@ class TabClawApp {
       fileInput.value = '';
     });
 
+    document.getElementById('new-table-btn').addEventListener('click', () => this._createBlankTable());
+
     // Chat input
     const input = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
@@ -144,6 +152,9 @@ class TabClawApp {
     });
     document.getElementById('skill-learn-check').addEventListener('change', e => {
       this.state.skillLearnEnabled = e.target.checked;
+    });
+    document.getElementById('implicit-feedback-check').addEventListener('change', e => {
+      this.state.implicitFeedbackEnabled = e.target.checked;
     });
 
     // Theme toggle
@@ -297,6 +308,10 @@ class TabClawApp {
     if (skillLearnLabel) skillLearnLabel.textContent = zh ? '技能学习' : 'Skill Learning';
     const skillLearnHint = document.getElementById('skill-learn-hint-span');
     if (skillLearnHint) skillLearnHint.textContent = zh ? '— 默认关闭' : '— auto off';
+    const implicitFbLabel = document.getElementById('implicit-feedback-label-text');
+    if (implicitFbLabel) implicitFbLabel.textContent = zh ? '隐式反馈' : 'Implicit Feedback';
+    const implicitFbHint = document.getElementById('implicit-feedback-hint-span');
+    if (implicitFbHint) implicitFbHint.textContent = zh ? '— 默认关闭' : '— auto off';
     // Plan modal buttons
     const planCancel = document.getElementById('plan-cancel-btn');
     if (planCancel) planCancel.textContent = zh ? '取消' : 'Cancel';
@@ -312,6 +327,16 @@ class TabClawApp {
     if (uploadMain) uploadMain.textContent = zh ? '点击或拖拽 CSV / Excel 文件至此' : 'Click or drop CSV / Excel files';
     const uploadSub = document.getElementById('upload-hint-sub');
     if (uploadSub) uploadSub.textContent = zh ? '支持多文件同时上传' : 'Multiple files supported';
+    const tablesTitle = document.getElementById('tables-panel-title');
+    if (tablesTitle) tablesTitle.textContent = zh ? '数据表' : 'Tables';
+    const newTableBtn = document.getElementById('new-table-btn');
+    if (newTableBtn) newTableBtn.textContent = zh ? '+ 新建空白表格' : '+ New blank table';
+    const chatEmptyDesc = document.getElementById('chat-empty-desc');
+    if (chatEmptyDesc) {
+      chatEmptyDesc.textContent = zh
+        ? '在侧栏上传或新建空白表格，然后对数据提问或下达操作指令。'
+        : 'Upload or create a blank table in the sidebar, then ask questions about your data.';
+    }
     // Lab credit
     const labCredit = document.getElementById('lab-credit');
     if (labCredit) labCredit.textContent = zh
@@ -345,6 +370,25 @@ class TabClawApp {
     } catch (e) { console.error('loadTables', e); }
   }
 
+  async _createBlankTable() {
+    const zh = this._lang === 'zh';
+    this._notify(zh ? '正在创建空白表格…' : 'Creating blank table…', 'info');
+    try {
+      const data = await this._api('POST', '/api/tables/create', {
+        name: zh ? '未命名表格' : 'Untitled',
+        rows: 10,
+        cols: 6,
+      });
+      this.state.tables = await this._api('GET', '/api/tables');
+      this._renderTables();
+      this._notify(zh ? '已创建，可在弹窗中编辑或粘贴' : 'Created — edit or paste in the viewer', 'success');
+      this._hideChatEmpty();
+      await this.showTableModal(data.table_id, 1);
+    } catch (e) {
+      this._notify(`${zh ? '创建失败' : 'Create failed'}: ${e.message}`, 'error');
+    }
+  }
+
   async _uploadFile(file) {
     const name = file.name;
     this._notify(`Uploading ${name}…`, 'info');
@@ -375,23 +419,30 @@ class TabClawApp {
     const count = document.getElementById('table-count');
     count.textContent = this.state.tables.length;
     if (!this.state.tables.length) {
-      list.innerHTML = '<div class="empty-state">No tables yet.<br>Upload CSV or Excel files below.</div>';
+      const zh = this._lang === 'zh';
+      list.innerHTML = zh
+        ? '<div class="empty-state">暂无数据表。<br>可新建空白表格或上传 CSV / Excel。</div>'
+        : '<div class="empty-state">No tables yet.<br>Create a blank table or upload CSV / Excel below.</div>';
       return;
     }
-    list.innerHTML = this.state.tables.map(t => `
+    list.innerHTML = this.state.tables.map(t => {
+      const badge = t.source === 'computed' ? 'result' : (t.source === 'manual' ? 'blank' : 'csv');
+      const badgeClass = t.source === 'computed' ? 'purple' : (t.source === 'manual' ? 'green' : '');
+      return `
       <div class="table-item">
         <span class="table-item-icon">📊</span>
         <div class="table-item-info" onclick="app.showTableModal('${t.table_id}')">
           <div class="table-item-name">${this._esc(t.name)}</div>
           <div class="table-item-meta">${t.rows.toLocaleString()} rows × ${t.cols} cols</div>
         </div>
-        <span class="table-item-badge ${t.source === 'computed' ? 'purple' : ''}">${t.source === 'computed' ? 'result' : 'csv'}</span>
+        <span class="table-item-badge ${badgeClass}">${badge}</span>
         <div class="table-item-actions">
           <button class="btn icon-only sm" title="View" onclick="app.showTableModal('${t.table_id}')">👁</button>
           <button class="btn icon-only sm danger" title="Delete" onclick="app._deleteTable('${t.table_id}')">🗑</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
     this._hideChatEmpty();
   }
 
@@ -400,7 +451,7 @@ class TabClawApp {
   // -----------------------------------------------------------------------
 
   async showTableModal(tableId, page = 1) {
-    this.state.tableModal = { tableId, page, totalPages: 1 };
+    this.state.tableModal = { tableId, page, totalPages: 1, source: null };
     document.getElementById('table-modal').classList.remove('hidden');
     await this._loadTablePage(tableId, page);
   }
@@ -411,21 +462,39 @@ class TabClawApp {
 
   async _loadTablePage(tableId, page) {
     const content = document.getElementById('table-modal-content');
-    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div>';
+    const zh = this._lang === 'zh';
+    content.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted)">${zh ? '加载中…' : 'Loading…'}</div>`;
     try {
       const data = await this._api('GET', `/api/tables/${tableId}?page=${page}&page_size=50`);
       this.state.tableModal.totalPages = data.total_pages;
       this.state.tableModal.page = data.page;
+      this.state.tableModal.source = data.source;
       document.getElementById('table-modal-title').textContent = data.name;
       document.getElementById('table-modal-meta').textContent =
         `${data.total_rows.toLocaleString()} rows × ${data.columns.length} columns`;
-      document.getElementById('table-modal-page').textContent =
-        `Page ${data.page} / ${data.total_pages}`;
-      document.getElementById('table-modal-prev').disabled = data.page <= 1;
-      document.getElementById('table-modal-next').disabled = data.page >= data.total_pages;
-      content.innerHTML = this._buildDataTable(data.columns, data.rows, data.total_rows);
+      const prevBtn = document.getElementById('table-modal-prev');
+      const nextBtn = document.getElementById('table-modal-next');
+      const pageSpan = document.getElementById('table-modal-page');
+      const isManual = data.source === 'manual';
+      if (isManual) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        pageSpan.textContent = zh ? '可编辑' : 'Editable';
+      } else {
+        prevBtn.style.display = '';
+        nextBtn.style.display = '';
+        pageSpan.textContent = `Page ${data.page} / ${data.total_pages}`;
+        prevBtn.disabled = data.page <= 1;
+        nextBtn.disabled = data.page >= data.total_pages;
+      }
+      if (isManual) {
+        content.innerHTML = this._buildEditableTable(data.columns, data.rows);
+        this._bindManualTableEditor(tableId);
+      } else {
+        content.innerHTML = this._buildDataTable(data.columns, data.rows, data.total_rows);
+      }
     } catch (e) {
-      content.innerHTML = `<div style="padding:20px;color:var(--red)">${e.message}</div>`;
+      content.innerHTML = `<div style="padding:20px;color:var(--red)">${this._esc(e.message)}</div>`;
     }
   }
 
@@ -449,6 +518,122 @@ class TabClawApp {
       html += `<div class="table-more-rows">${totalRows.toLocaleString()} total rows — <a style="color:var(--primary);cursor:pointer" onclick="app.showTableModal('_tid_')">View full table</a></div>`;
     }
     return html;
+  }
+
+  _buildEditableTable(columns, rows) {
+    const zh = this._lang === 'zh';
+    const th = columns.map((c, i) =>
+      `<th><input type="text" class="col-edit" data-ci="${i}" value="${this._esc(String(c))}" /></th>`
+    ).join('');
+    const bodyRows = (rows && rows.length)
+      ? rows.map((row, ri) =>
+        `<tr>${columns.map((c, ci) =>
+          `<td><input type="text" class="cell-edit" data-ri="${ri}" data-ci="${ci}" value="${this._esc(String(row[c] ?? ''))}" /></td>`
+        ).join('')}</tr>`
+      ).join('')
+      : '';
+    return `
+      <div class="table-editor-toolbar">
+        <button type="button" class="btn sm primary" id="table-save-btn">${zh ? '保存' : 'Save'}</button>
+        <button type="button" class="btn sm" id="table-paste-btn">${zh ? '从剪贴板粘贴' : 'Paste from clipboard'}</button>
+        <span style="font-size:11px;color:var(--text-dim)">${zh ? '可直接编辑单元格；粘贴兼容 Excel / TSV / CSV' : 'Edit cells; paste from Excel, TSV, or CSV'}</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table editable-table"><thead><tr>${th}</tr></thead><tbody>${bodyRows}</tbody></table>
+      </div>
+    `;
+  }
+
+  _bindManualTableEditor(tableId) {
+    const save = document.getElementById('table-save-btn');
+    const paste = document.getElementById('table-paste-btn');
+    if (save) save.onclick = () => this._saveManualTable(tableId);
+    if (paste) paste.onclick = () => this._pasteManualTable(tableId);
+  }
+
+  async _saveManualTable(tableId) {
+    const zh = this._lang === 'zh';
+    const wrap = document.querySelector('#table-modal-content .editable-table');
+    if (!wrap) return;
+    const colInputs = [...wrap.querySelectorAll('thead input.col-edit')];
+    const columns = colInputs.map(inp => inp.value);
+    const cells = [...wrap.querySelectorAll('tbody input.cell-edit')];
+    const colCount = columns.length;
+    if (!colCount) {
+      this._notify(zh ? '至少保留一列' : 'Need at least one column', 'error');
+      return;
+    }
+    const rowCount = colCount ? Math.floor(cells.length / colCount) : 0;
+    if (cells.length !== rowCount * colCount) {
+      this._notify(zh ? '单元格数量与列数不一致' : 'Cell count does not match columns', 'error');
+      return;
+    }
+    const data = [];
+    for (let r = 0; r < rowCount; r++) {
+      const row = [];
+      for (let c = 0; c < colCount; c++) row.push(cells[r * colCount + c].value);
+      data.push(row);
+    }
+    try {
+      await this._api('PUT', `/api/tables/${tableId}`, { columns, data });
+      this._notify(zh ? '已保存' : 'Saved', 'success');
+      this.state.tables = await this._api('GET', '/api/tables');
+      this._renderTables();
+      await this._loadTablePage(tableId, 1);
+    } catch (e) {
+      this._notify(`${zh ? '保存失败' : 'Save failed'}: ${e.message}`, 'error');
+    }
+  }
+
+  _parsePastedGrid(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.length);
+    if (!lines.length) return null;
+    const splitLine = (line) => {
+      if (line.includes('\t')) return line.split('\t').map(s => s.trim());
+      return line.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+    };
+    const rows = lines.map(splitLine);
+    const width = Math.max(...rows.map(r => r.length), 0);
+    if (!width) return null;
+    return rows.map(r => {
+      const copy = [...r];
+      while (copy.length < width) copy.push('');
+      return copy;
+    });
+  }
+
+  async _pasteManualTable(tableId) {
+    const zh = this._lang === 'zh';
+    let text;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      this._notify(zh ? '无法读取剪贴板（需 HTTPS 或浏览器权限）' : 'Cannot read clipboard (needs HTTPS or permission)', 'error');
+      return;
+    }
+    const grid = this._parsePastedGrid(text);
+    if (!grid || !grid.length) {
+      this._notify(zh ? '剪贴板为空或无法解析' : 'Clipboard is empty or could not be parsed', 'error');
+      return;
+    }
+    let columns;
+    let data;
+    if (grid.length === 1) {
+      columns = grid[0].map((_, i) => `Col${i + 1}`);
+      data = [grid[0]];
+    } else {
+      columns = grid[0];
+      data = grid.slice(1);
+    }
+    try {
+      await this._api('PUT', `/api/tables/${tableId}`, { columns, data });
+      this._notify(zh ? '已粘贴并保存' : 'Pasted and saved', 'success');
+      this.state.tables = await this._api('GET', '/api/tables');
+      this._renderTables();
+      await this._loadTablePage(tableId, 1);
+    } catch (e) {
+      this._notify(`${zh ? '粘贴失败' : 'Paste failed'}: ${e.message}`, 'error');
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -520,9 +705,17 @@ class TabClawApp {
       const endpoint = executePlan ? '/api/execute-plan' : '/api/chat';
       const codeTool = this.state.codeToolEnabled;
       const skillLearn = this.state.skillLearnEnabled;
+      const implicitFeedback = this.state.implicitFeedbackEnabled;
+      const lastWorkflowId = this._lastCompletedWorkflowId;
       const body = executePlan
         ? { message, steps, code_tool: codeTool, skill_learn: skillLearn }
-        : { message, code_tool: codeTool, skill_learn: skillLearn };
+        : {
+            message,
+            code_tool: codeTool,
+            skill_learn: skillLearn,
+            implicit_feedback: implicitFeedback,
+            last_workflow_id: lastWorkflowId,
+          };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -561,6 +754,11 @@ class TabClawApp {
       }
       if (this.state.currentWorkflowId) {
         this._appendFeedbackButtons(msgId, this.state.currentWorkflowId);
+        // Track msgId so implicit feedback can update the UI
+        this._workflowMsgMap[this.state.currentWorkflowId] = msgId;
+        this._lastCompletedWorkflowId = this.state.currentWorkflowId;
+      } else {
+        this._lastCompletedWorkflowId = null;
       }
       this.state.streaming = false;
       this._setInputEnabled(true);
@@ -658,6 +856,10 @@ class TabClawApp {
           this._updateStreamBubble(msgId, event.content);
           this._streamBuffer = event.content;
         }
+        break;
+
+      case 'implicit_feedback_applied':
+        this._handleImplicitFeedbackApplied(event);
         break;
 
       case 'error':
@@ -1123,7 +1325,7 @@ class TabClawApp {
       this._chatContainer().innerHTML = `
         <div id="chat-empty">
           <div class="brand-logo-wrap"><img src="/asset/logo_rmbg.png" class="brand-logo" /></div>
-          <p>Upload tables from the sidebar, then ask questions or request operations on your data.</p>
+          <p id="chat-empty-desc">Upload or create a blank table in the sidebar, then ask questions about your data.</p>
           <div class="suggestion-chips">
             <div class="chip" onclick="app.insertSuggestion(this)">Summarize all uploaded tables</div>
             <div class="chip" onclick="app.insertSuggestion(this)">Find rows where value is null</div>
@@ -1131,6 +1333,7 @@ class TabClawApp {
             <div class="chip" onclick="app.insertSuggestion(this)">Show top 10 rows sorted by first numeric column</div>
           </div>
         </div>`;
+      this._applyLangLabels();
       this._notify('Chat history cleared', 'success');
     } catch (e) { this._notify(e.message, 'error'); }
   }
@@ -1249,7 +1452,7 @@ class TabClawApp {
         <div class="skill-empty-steps">
           <div>1️⃣ 用 TabClaw 分析几次表格</div>
           <div>2️⃣ 给出 👍👎 反馈</div>
-          <div>3️⃣ 点上方 <b>🔍</b> 从历史中发现技能</div>
+          <div>3️⃣ 点下方 <b>「🔍 从历史中发现技能」</b></div>
         </div>
         <div style="margin-top:6px;font-size:11px;color:var(--text-dim)">或者开启底部 <b>Skill Learning</b> 让系统自动学习</div>
       </div>`;
@@ -2032,6 +2235,25 @@ class TabClawApp {
     }
   }
 
+  _handleImplicitFeedbackApplied(event) {
+    const { session_id, feedback, already_rated } = event;
+    if (already_rated) return; // Already manually rated, don't override UI
+
+    const msgId = this._workflowMsgMap[session_id];
+    if (!msgId) return;
+
+    const container = document.getElementById(`feedback-${msgId}`);
+    if (!container) return;
+
+    if (feedback === 'good') {
+      container.innerHTML =
+        '<span class="feedback-done good implicit">👍 隐式反馈（正向）— 已自动记录</span>';
+    } else if (feedback === 'bad') {
+      container.innerHTML =
+        '<span class="feedback-done bad implicit">👎 隐式反馈（负向）— 已自动记录</span>';
+    }
+  }
+
   // -----------------------------------------------------------------------
   // Skill-reused hint
   // -----------------------------------------------------------------------
@@ -2081,7 +2303,10 @@ class TabClawApp {
       let domainHtml = '';
       if (domains.length) {
         domainHtml = `<div class="growth-section">
-          <div class="growth-section-title">领域熟练度</div>
+          <div class="growth-section-title">
+            领域熟练度
+            <button class="btn sm" style="margin-left:auto;font-size:10px" onclick="app._showAddDomainForm()">+ 自定义领域</button>
+          </div>
           ${domains.map(d => {
             const pct = Math.round(d.proficiency * 100);
             return `<div class="growth-domain-row">
@@ -2090,6 +2315,14 @@ class TabClawApp {
               <span class="growth-domain-meta">${d.sessions} 次 · ${pct}%</span>
             </div>`;
           }).join('')}
+          <div id="add-domain-form" class="add-domain-form hidden">
+            <input type="text" id="add-domain-name" class="form-input sm" placeholder="领域名称，如：医疗健康" />
+            <input type="text" id="add-domain-keywords" class="form-input sm" placeholder="关键词（逗号分隔），如：患者,医疗,诊断" />
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+              <button class="btn sm" onclick="document.getElementById('add-domain-form').classList.add('hidden')">取消</button>
+              <button class="btn sm primary" onclick="app._submitCustomDomain()">添加</button>
+            </div>
+          </div>
         </div>`;
       }
 
@@ -2221,6 +2454,29 @@ class TabClawApp {
   hideGrowthModal() {
     const modal = document.getElementById('growth-modal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  _showAddDomainForm() {
+    const form = document.getElementById('add-domain-form');
+    if (form) form.classList.remove('hidden');
+  }
+
+  async _submitCustomDomain() {
+    const nameEl = document.getElementById('add-domain-name');
+    const kwEl = document.getElementById('add-domain-keywords');
+    const name = (nameEl?.value || '').trim();
+    const kwStr = (kwEl?.value || '').trim();
+    if (!name || !kwStr) { this._notify('请填写领域名称和关键词', 'error'); return; }
+    const keywords = kwStr.split(/[,，、\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (keywords.length === 0) { this._notify('请至少填写一个关键词', 'error'); return; }
+    try {
+      await this._api('POST', '/api/growth/domains', { name, keywords });
+      this._notify(`领域「${name}」已添加，新的会话将自动归类`, 'success');
+      this.hideGrowthModal();
+      setTimeout(() => this.showGrowthDashboard(), 300);
+    } catch (e) {
+      this._notify(e.message, 'error');
+    }
   }
 
   // -----------------------------------------------------------------------

@@ -52,8 +52,11 @@
     <!-- Tables panel -->
     <div class="sidebar-panel active" id="panel-tables">
       <div class="sidebar-panel-header">
-        <span>Uploaded Tables</span>
+        <span id="tables-panel-title">Tables</span>
         <span id="table-count" class="text-muted">0</span>
+      </div>
+      <div class="tables-panel-actions">
+        <button type="button" class="btn sm primary" id="new-table-btn">+ New blank table</button>
       </div>
       <div class="sidebar-scroll" id="tables-list">
         <!-- populated by JS -->
@@ -74,7 +77,6 @@
       <div class="sidebar-panel-header">
         <span>Skills</span>
         <div style="display:flex;gap:4px">
-          <button class="btn sm" id="discover-skill-btn" title="从历史分析中发现重复模式并提炼为可复用技能">🔍</button>
           <button class="btn sm" id="import-skill-btn" title="Import skill package (.zip)">📦 Import</button>
           <button class="btn sm danger" id="clear-skills-btn" title="Clear all package skills">🗑 Clear</button>
           <button class="btn sm primary" id="add-skill-btn">+ Add</button>
@@ -82,6 +84,11 @@
       </div>
       <div class="sidebar-scroll" id="skills-list">
         <!-- populated by JS -->
+      </div>
+      <div class="skill-discover-bar">
+        <button class="btn skill-discover-btn" id="discover-skill-btn" title="从历史分析中发现重复模式并提炼为可复用技能">
+          🔍 从历史中发现技能
+        </button>
       </div>
       <input type="file" id="skill-zip-input" accept=".zip" style="display:none" />
     </div>
@@ -125,7 +132,7 @@
         <div class="brand-logo-wrap">
           <img src="/asset/logo_rmbg.png" alt="TabClaw" class="brand-logo" />
         </div>
-        <p>Upload tables from the sidebar, then ask questions or request operations on your data.</p>
+        <p id="chat-empty-desc">Upload or create a blank table in the sidebar, then ask questions about your data.</p>
         <div class="suggestion-chips">
           <div class="chip" onclick="app.insertSuggestion(this)">Summarize all uploaded tables</div>
           <div class="chip" onclick="app.insertSuggestion(this)">Find rows where value is null</div>
@@ -172,6 +179,13 @@
           <span id="skill-learn-label-text">Skill Learning</span>
         </label>
         <span id="skill-learn-hint-span" style="color:var(--text-dim);font-size:11px;">— auto off</span>
+        <div class="toolbar-sep"></div>
+        <label class="plan-mode-toggle" title="Infer feedback signal from your next message automatically">
+          <input type="checkbox" id="implicit-feedback-check" />
+          <span class="toggle-track"></span>
+          <span id="implicit-feedback-label-text">Implicit Feedback</span>
+        </label>
+        <span id="implicit-feedback-hint-span" style="color:var(--text-dim);font-size:11px;">— auto off</span>
       </div>
       <div class="input-row">
         <textarea id="message-input" placeholder="Ask a question or give an instruction about your tables…" rows="1"></textarea>

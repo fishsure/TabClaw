@@ -197,6 +197,15 @@ html.light .header-logo {
   padding: 8px;
 }
 
+.tables-panel-actions {
+  padding: 0 8px 8px;
+  flex-shrink: 0;
+}
+
+.tables-panel-actions .btn {
+  width: 100%;
+}
+
 /* ---------- Tables panel ---------- */
 .table-item {
   padding: 8px 10px;
@@ -232,6 +241,7 @@ html.light .header-logo {
   flex-shrink: 0;
 }
 .table-item-badge.purple { background: #5a3f8033; color: var(--purple); }
+.table-item-badge.green { background: #2d6a4f33; color: #52b788; }
 
 .table-item-actions {
   opacity: 0;
@@ -631,6 +641,44 @@ table.data-table tbody td {
   text-overflow: ellipsis;
   font-family: 'SF Mono', monospace;
   font-size: 11px;
+}
+
+.table-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+table.data-table.editable-table thead th {
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 4px;
+  vertical-align: top;
+}
+
+table.data-table.editable-table thead th input.col-edit,
+table.data-table.editable-table tbody td input.cell-edit {
+  width: 100%;
+  min-width: 72px;
+  max-width: 200px;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+table.data-table.editable-table tbody td {
+  max-width: none;
+  white-space: normal;
+  padding: 4px;
+  vertical-align: middle;
 }
 
 .table-more-rows {
@@ -1930,6 +1978,7 @@ html.light .compact-notice { background: var(--primary-dark)08; }
 }
 .feedback-done.good { color: var(--green); }
 .feedback-done.bad  { color: var(--text-muted); }
+.feedback-done.implicit { opacity: 0.7; font-style: italic; }
 
 /* ── Skill reused hint ────────────────────────────────────────────── */
 .skill-reused-hint {
@@ -1990,6 +2039,8 @@ html.light .compact-notice { background: var(--primary-dark)08; }
 }
 .growth-section { margin-bottom: 14px; }
 .growth-section-title {
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -2194,6 +2245,20 @@ html.light .compact-notice { background: var(--primary-dark)08; }
   white-space: nowrap;
 }
 
+.add-domain-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.add-domain-form .form-input.sm {
+  padding: 5px 8px;
+  font-size: 12px;
+}
 .growth-eff-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2326,6 +2391,31 @@ html.light .compact-notice { background: var(--primary-dark)08; }
   font-size: 11px;
   color: var(--text-dim);
   margin-right: 6px;
+}
+
+/* ── Skill discover bar (bottom of skills panel) ─────────────────── */
+.skill-discover-bar {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.skill-discover-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-bg, rgba(99,102,241,0.08));
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.skill-discover-btn:hover {
+  background: rgba(99,102,241,0.15);
+  border-style: solid;
 }
 
 /* ── Skills empty guide ───────────────────────────────────────────── */

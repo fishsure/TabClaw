@@ -12,11 +12,13 @@
         <meta name="author" content="Shuo Yu, Daoyu Wang, Qingchuan Li">
       
       
-        <link rel="canonical" href="https://agentr1.github.io/tab-claw/configuration/">
+        <link rel="canonical" href="https://agentr1.github.io/tab-claw/self_evolution/">
       
       
-        <link rel="prev" href="../skills/">
+        <link rel="prev" href="../features/">
       
+      
+        <link rel="next" href="../architecture/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>Configuration - TabClaw</title>
+        <title>Self-evolution - TabClaw</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#configuration" class="md-skip">
+        <a href="#self-evolution-mechanism" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Configuration
+              Self-evolution
             
           </span>
         </div>
@@ -262,9 +264,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../self_evolution/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -319,11 +323,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../configuration/" class="md-tabs__link">
         
   
   
@@ -438,10 +440,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../self_evolution/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-evolution
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -457,6 +486,164 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Big picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-workflow-recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Workflow recording
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-three-ways-skills-evolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Three ways skills evolve
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Three ways skills evolve">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-post-task-distillation-try_distill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Post-task distillation (try_distill)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-pattern-discovery-discover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Pattern discovery (discover)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-feedback-driven-improvement-try_improve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Feedback-driven improvement (try_improve)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-feedback-and-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Feedback and skills
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-implicit-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Implicit feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-growth-dashboard-get_growth_profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Growth Dashboard (get_growth_profile)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-api-summary-evolution-related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. API summary (evolution-related)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-files-to-read-in-the-repo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Files to read in the repo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-limitations-honest-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Limitations (honest scope)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -519,37 +706,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Configuration
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -565,126 +725,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#settingtxt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        setting.txt
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#supported-providers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Providers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#model-selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Model Selection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Model Selection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deepseek-v3-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DeepSeek V3 Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#runtime-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Runtime Data
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Runtime Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Memory File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-skills-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Skills File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -716,10 +756,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#settingtxt" class="md-nav__link">
+  <a href="#1-big-picture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        setting.txt
+        1. Big picture
       
     </span>
   </a>
@@ -727,10 +767,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-providers" class="md-nav__link">
+  <a href="#2-workflow-recording" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Providers
+        2. Workflow recording
       
     </span>
   </a>
@@ -738,22 +778,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-selection" class="md-nav__link">
+  <a href="#3-three-ways-skills-evolve" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Selection
+        3. Three ways skills evolve
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Model Selection">
+    <nav class="md-nav" aria-label="3. Three ways skills evolve">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#deepseek-v3-notes" class="md-nav__link">
+  <a href="#31-post-task-distillation-try_distill" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DeepSeek V3 Notes
+        3.1 Post-task distillation (try_distill)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-pattern-discovery-discover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Pattern discovery (discover)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-feedback-driven-improvement-try_improve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Feedback-driven improvement (try_improve)
       
     </span>
   </a>
@@ -766,49 +828,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#runtime-data" class="md-nav__link">
+  <a href="#4-feedback-and-skills" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runtime Data
+        4. Feedback and skills
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Runtime Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Memory File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-skills-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Skills File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#5-implicit-feedback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        5. Implicit feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-growth-dashboard-get_growth_profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Growth Dashboard (get_growth_profile)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-api-summary-evolution-related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. API summary (evolution-related)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-files-to-read-in-the-repo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Files to read in the repo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-limitations-honest-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Limitations (honest scope)
       
     </span>
   </a>
@@ -832,155 +910,167 @@
 
 
 
-<h1 id="configuration">⚙️ Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
-<h2 id="settingtxt">setting.txt<a class="headerlink" href="#settingtxt" title="Permanent link">&para;</a></h2>
-<p>Copy the example file and fill in your credentials:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cp<span class="w"> </span>setting.txt.example<span class="w"> </span>setting.txt
-</span></code></pre></div>
-<p><code>setting.txt</code> is listed in <code>.gitignore</code> and will <strong>never</strong> be committed to git.</p>
-<div class="language-ini highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Your LLM API key</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="na">API_KEY</span><span class="o">=</span><span class="s">your_api_key_here</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># API base URL (OpenAI-compatible endpoint)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="na">BASE_URL</span><span class="o">=</span><span class="s">https://api.openai.com/v1</span>
+<h1 id="self-evolution-mechanism">Self-evolution mechanism<a class="headerlink" href="#self-evolution-mechanism" title="Permanent link">&para;</a></h1>
+<p>This document describes <strong>how TabClaw’s self-evolution is implemented in code</strong> (as of the v2 pipeline): what gets recorded, how skills are created or upgraded, how feedback flows in, and how the Growth Dashboard is computed.</p>
+<hr />
+<h2 id="1-big-picture">1. Big picture<a class="headerlink" href="#1-big-picture" title="Permanent link">&para;</a></h2>
+<p>Self-evolution rests on three ideas:</p>
+<ol>
+<li><strong>Every completed analysis is a workflow</strong> — stored as JSON so we can mine patterns and attach feedback.</li>
+<li><strong>Skills are SKILL.md-style packages</strong> — stored under <code>data/skills/&lt;slug&gt;/</code>, versioned, and injected into the agent like ClawHub/OpenClaw packages.</li>
+<li><strong>The LLM is the “evolution operator”</strong> — distillation, discovery, and improvement are all <strong>prompted LLM calls</strong> with structured JSON outputs; there is no separate training loop.</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User task → Agent + tools → WorkflowRecord saved to data/workflows/
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                ├─ Skill Learning + ≥3 tool calls → try_distill → new package skill (SKILL.md)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                ├─ Discover from history → recurring tool_sequence → LLM suggestions (user accepts)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                ├─ 👍/👎 or implicit feedback → record_feedback → failure_count ≥ 2 → try_improve → upgraded SKILL.md
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                └─ get_growth_profile() → Growth Dashboard (domains, efficiency, timeline)
 </span></code></pre></div>
 <hr />
-<h2 id="supported-providers">Supported Providers<a class="headerlink" href="#supported-providers" title="Permanent link">&para;</a></h2>
-<p>TabClaw uses the <strong>OpenAI-compatible API format</strong> (<code>/chat/completions</code> with streaming and tool/function calling). It works with any provider that supports this interface:</p>
+<h2 id="2-workflow-recording">2. Workflow recording<a class="headerlink" href="#2-workflow-recording" title="Permanent link">&para;</a></h2>
+<p><strong>Module:</strong> <code>agent/workflow_recorder.py</code><br />
+<strong>Storage:</strong> <code>data/workflows/&lt;session_id&gt;.json</code></p>
+<p>When a plan run finishes, <code>AgentExecutor</code> builds a <code>WorkflowRecord</code>: user message, tables involved, optional plan, each tool step (name, params, short result summary, duration), final conclusion, duration, and which <strong>package skills</strong> were used (<code>skills_used</code>).</p>
+<p>Important derived fields:</p>
 <table>
 <thead>
 <tr>
-<th>Provider</th>
-<th>BASE_URL</th>
-<th>Notes</th>
+<th>Field</th>
+<th>Role</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>OpenAI</td>
-<td><code>https://api.openai.com/v1</code></td>
-<td>gpt-4o, gpt-4-turbo</td>
+<td><code>tool_sequence</code></td>
+<td>Fingerprint <code>tool_a → tool_b → …</code> used for <strong>recurring pattern</strong> detection</td>
 </tr>
 <tr>
-<td>DeepSeek</td>
-<td><code>https://api.deepseek.com/v1</code></td>
-<td>Default: DeepSeek-V3</td>
+<td><code>user_feedback</code> / <code>feedback_detail</code></td>
+<td><code>good</code> / <code>bad</code>, or implicit path (see §5)</td>
 </tr>
 <tr>
-<td>SiliconFlow</td>
-<td><code>https://api.siliconflow.cn/v1</code></td>
-<td>Many open-source models</td>
-</tr>
-<tr>
-<td>Ollama (local)</td>
-<td><code>http://localhost:11434/v1</code></td>
-<td>Requires tool-call support</td>
-</tr>
-<tr>
-<td>Any OpenAI-compatible API</td>
-<td>your endpoint</td>
-<td>—</td>
+<td><code>skill_distilled</code></td>
+<td>Name of a skill created in this session by post-task distillation (if any)</td>
 </tr>
 </tbody>
 </table>
+<p><code>update_workflow_feedback(session_id, feedback, detail)</code> rewrites the JSON file when the user rates a reply or when implicit feedback is applied.</p>
 <hr />
-<h2 id="model-selection">Model Selection<a class="headerlink" href="#model-selection" title="Permanent link">&para;</a></h2>
-<p>The default model is set in <code>config.py</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">DEFAULT_MODEL</span> <span class="o">=</span> <span class="s2">&quot;deepseek-ai/DeepSeek-V3&quot;</span>
-</span></code></pre></div>
-<p>Change this to any model your provider supports. TabClaw requires a model that supports <strong>parallel tool/function calling</strong> and <strong>streaming</strong>. Recommended models:</p>
+<h2 id="3-three-ways-skills-evolve">3. Three ways skills evolve<a class="headerlink" href="#3-three-ways-skills-evolve" title="Permanent link">&para;</a></h2>
+<p>All three are implemented in <strong><code>agent/skill_distiller.py</code></strong> (<code>SkillDistiller</code>), using <strong><code>skills/registry.py</code></strong> to create or upgrade packages.</p>
+<h3 id="31-post-task-distillation-try_distill">3.1 Post-task distillation (<code>try_distill</code>)<a class="headerlink" href="#31-post-task-distillation-try_distill" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger:</strong> End of a plan execution when <strong>Skill Learning</strong> is enabled and the task used <strong>at least 3 tool calls</strong> (<code>MIN_TOOL_CALLS = 3</code>).</p>
+<p><strong>Input:</strong> User message + ordered tool-call log (tool name + params).</p>
+<p><strong>Logic:</strong> The LLM decides whether there is a <strong>reusable, generalisable</strong> pattern worth a new package skill. It receives lists of built-in tool names and <strong>existing package skill names</strong> to avoid duplicates. On success it returns JSON with <code>name</code>, <code>description</code>, and Markdown <code>body</code> for <code>SKILL.md</code>.</p>
+<p><strong>Persist:</strong> <code>SkillRegistry.create_package(..., source="distilled", derived_from=workflow_id)</code>. The workflow record is updated with <code>skill_distilled</code> pointing at the new skill name.</p>
+<h3 id="32-pattern-discovery-discover">3.2 Pattern discovery (<code>discover</code>)<a class="headerlink" href="#32-pattern-discovery-discover" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger:</strong> User clicks <strong>Discover skills from history</strong> in the UI → <code>POST /api/skills/discover</code> (see <code>app.py</code>).</p>
+<p><strong>Mechanical step:</strong> <code>_find_uncaptured_patterns()</code> scans all <code>data/workflows/*.json</code> and groups sessions by <strong><code>tool_sequence</code></strong>. Sequences that appear <strong>≥ 2 times</strong>, have enough steps, and are <strong>not</strong> already “covered” by an existing skill’s tool set (heuristic overlap with <code>SKILL.md</code> bodies) are candidates.</p>
+<p><strong>LLM step:</strong> Top patterns (with example user messages) are sent to the LLM, which returns a JSON <strong>array of suggestions</strong> (name, description, body) — same package format as distillation, but <strong>not</strong> created until the user accepts in the UI.</p>
+<h3 id="33-feedback-driven-improvement-try_improve">3.3 Feedback-driven improvement (<code>try_improve</code>)<a class="headerlink" href="#33-feedback-driven-improvement-try_improve" title="Permanent link">&para;</a></h3>
+<p><strong>Trigger:</strong> User sends <strong>👎</strong> on a reply (<code>POST /api/workflow/{session_id}/feedback</code>). For each <strong>package skill</strong> used in that workflow, <code>SkillRegistry.record_feedback(slug, "bad")</code> increments failure stats.</p>
+<p><strong>Automatic upgrade:</strong> If a skill’s <strong><code>failure_count</code> ≥ 2</strong>, the server calls <strong><code>try_improve(slug)</code></strong>. The distiller loads <strong>bad-feedback workflows</strong> whose tool sequence overlaps the tools referenced in that skill’s <code>SKILL.md</code> (built-in names in backticks). It sends the current body plus excerpts of bad sessions to the LLM, which returns either <code>improved: false</code> or a <strong>new full <code>body</code></strong> + reason.</p>
+<p><strong>Persist:</strong> <code>SkillRegistry.upgrade_package(slug, new_body, reason)</code> bumps the version and keeps history as implemented in the registry.</p>
+<p><strong>Manual:</strong> The UI can also call <strong><code>POST /api/skills/{slug}/improve</code></strong> to force the same path.</p>
+<hr />
+<h2 id="4-feedback-and-skills">4. Feedback and skills<a class="headerlink" href="#4-feedback-and-skills" title="Permanent link">&para;</a></h2>
+<p><strong>Module:</strong> <code>skills/registry.py</code> — <code>record_feedback(slug, "good" | "bad")</code> updates per-package success/failure counters used for growth stats and upgrade thresholds.</p>
+<p>Explicit feedback hits <strong><code>/api/workflow/{session_id}/feedback</code></strong> and updates the workflow JSON <strong>and</strong> package stats.</p>
+<hr />
+<h2 id="5-implicit-feedback">5. Implicit feedback<a class="headerlink" href="#5-implicit-feedback" title="Permanent link">&para;</a></h2>
+<p><strong>Optional:</strong> When the client sends <strong>implicit feedback</strong> mode with the <strong>last workflow id</strong>, the next user message is classified by an LLM (<code>_classify_implicit_feedback</code> in <code>app.py</code>) against the previous reply’s conclusion.</p>
+<p>If the verdict is <code>good</code> or <code>bad</code> and the workflow was not already rated, <strong>the same</strong> <code>update_workflow_feedback</code> and <code>record_feedback</code> paths run as for explicit 👍/👎.</p>
+<hr />
+<h2 id="6-growth-dashboard-get_growth_profile">6. Growth Dashboard (<code>get_growth_profile</code>)<a class="headerlink" href="#6-growth-dashboard-get_growth_profile" title="Permanent link">&para;</a></h2>
+<p><strong>Module:</strong> <code>agent/workflow_recorder.py</code> — <code>get_growth_profile()</code></p>
+<p>It walks <strong>all</strong> workflow JSON files and aggregates:</p>
+<ul>
+<li>Session counts, 👍/👎 counts, satisfaction rate  </li>
+<li><strong>Domain buckets</strong> — <code>_classify_domain()</code> scores user text + table names against <strong>built-in keyword lists</strong> (<code>_DOMAIN_KEYWORDS</code>) plus <strong><code>data/custom_domains.json</code></strong> (user-defined domains from the UI)  </li>
+<li><strong>Tool frequency</strong> across steps  </li>
+<li><strong>Efficiency</strong> — compares average duration and step count between <strong>early</strong> and <strong>recent</strong> half of sessions (when enough data)  </li>
+<li><strong>Timeline</strong> events — e.g. when <code>skill_distilled</code> appears  </li>
+<li><strong>Milestones</strong> — derived in the same function from counts and events  </li>
+</ul>
+<p>The frontend calls <strong><code>GET /api/growth/profile</code></strong> to render the Growth Dashboard.</p>
+<hr />
+<h2 id="7-api-summary-evolution-related">7. API summary (evolution-related)<a class="headerlink" href="#7-api-summary-evolution-related" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Model</th>
-<th>Strengths</th>
+<th>Endpoint</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>deepseek-ai/DeepSeek-V3</code></td>
-<td>Strong reasoning, fast, cost-effective — default</td>
+<td><code>POST /api/workflow/{session_id}/feedback</code></td>
+<td>👍/👎; may trigger <code>try_improve</code> and return <code>skill_upgraded</code></td>
 </tr>
 <tr>
-<td><code>gpt-4o</code></td>
-<td>Best instruction following, reliable tool call JSON</td>
+<td><code>POST /api/skills/discover</code></td>
+<td>Run pattern discovery; returns suggestions</td>
 </tr>
 <tr>
-<td><code>deepseek-chat</code></td>
-<td>DeepSeek native endpoint alias</td>
+<td><code>POST /api/skills/{slug}/improve</code></td>
+<td>Manually trigger skill upgrade from bad workflows</td>
 </tr>
 <tr>
-<td><code>qwen2.5-72b-instruct</code></td>
-<td>Good open-source alternative via SiliconFlow</td>
+<td><code>GET /api/growth/profile</code></td>
+<td>Growth Dashboard payload</td>
+</tr>
+<tr>
+<td><code>POST /api/growth/domains</code></td>
+<td>Add custom domain keywords (<code>custom_domains.json</code>)</td>
+</tr>
+<tr>
+<td><code>GET /api/workflows</code></td>
+<td>List recent workflow metadata</td>
 </tr>
 </tbody>
 </table>
-<h3 id="deepseek-v3-notes">DeepSeek V3 Notes<a class="headerlink" href="#deepseek-v3-notes" title="Permanent link">&para;</a></h3>
-<p>TabClaw includes a specific workaround for DeepSeek V3's tool call behaviour: the model occasionally leaks raw tool-call markup (<code>&lt;｜tool▁call▁begin｜&gt;…</code>) into <code>delta.content</code> during streaming. The executor detects this marker and suppresses the affected chunks, ensuring the chat UI only displays clean reasoning text. If you switch to a different model, this suppression is inert and does not affect output.</p>
+<p>Chat streaming may emit SSE events such as <code>workflow_id</code>, <code>skill_learned</code>, and <code>implicit_feedback_applied</code> — see <code>app.py</code> and <code>static/app.js</code>.</p>
 <hr />
-<h2 id="runtime-data">Runtime Data<a class="headerlink" href="#runtime-data" title="Permanent link">&para;</a></h2>
-<p>The following files are created automatically at runtime and are gitignored:</p>
+<h2 id="8-files-to-read-in-the-repo">8. Files to read in the repo<a class="headerlink" href="#8-files-to-read-in-the-repo" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>File</th>
-<th>Contents</th>
+<th>Path</th>
+<th>Content</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>data/memory.json</code></td>
-<td>User memory — preferences, domain knowledge, context, history insights</td>
+<td><code>agent/workflow_recorder.py</code></td>
+<td>Workflow schema, feedback updates, <code>find_recurring_patterns</code>, <code>get_growth_profile</code>, domain keywords</td>
 </tr>
 <tr>
-<td><code>data/custom_skills.json</code></td>
-<td>Custom skills saved from the UI or learned by the skill distiller</td>
+<td><code>agent/skill_distiller.py</code></td>
+<td><code>try_distill</code>, <code>discover</code>, <code>try_improve</code>, pattern mining</td>
 </tr>
 <tr>
-<td><code>uploads/</code></td>
-<td>Temporarily uploaded CSV/Excel files</td>
+<td><code>agent/executor.py</code></td>
+<td>Saves workflow after run; calls <code>try_distill</code> when <code>auto_learn</code> is on</td>
+</tr>
+<tr>
+<td><code>skills/registry.py</code></td>
+<td>Package CRUD, versioning, <code>record_feedback</code>, <code>upgrade_package</code></td>
+</tr>
+<tr>
+<td><code>app.py</code></td>
+<td>HTTP routes, implicit feedback, workflow feedback → upgrade</td>
 </tr>
 </tbody>
 </table>
-<h3 id="memory-file-format">Memory File Format<a class="headerlink" href="#memory-file-format" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;preferences&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;output_language&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Chinese&quot;</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">&quot;updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-15T10:23:41+00:00&quot;</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">&quot;domain_knowledge&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">&quot;user_context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">&quot;history_insights&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
-</span></code></pre></div>
-<h3 id="custom-skills-file-format">Custom Skills File Format<a class="headerlink" href="#custom-skills-file-format" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">[</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p">{</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a1b2c3d4&quot;</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit_margin_ranking&quot;</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rank products or regions by profit margin (profit / revenue).&quot;</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# generalised Python code …&quot;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">]</span>
-</span></code></pre></div>
 <hr />
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>fastapi
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>uvicorn[standard]
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>python-multipart
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>aiofiles
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>openai&gt;=1.0
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>pandas
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>openpyxl
-</span></code></pre></div>
-<p>Install with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-</span></code></pre></div>
-<p>The <code>openai</code> SDK is used as the async HTTP client for any OpenAI-compatible endpoint — no OpenAI account is required.</p>
+<h2 id="9-limitations-honest-scope">9. Limitations (honest scope)<a class="headerlink" href="#9-limitations-honest-scope" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>No gradient training</strong> — evolution is <strong>prompt + JSON skill files</strong>, not model fine-tuning.  </li>
+<li><strong>Pattern discovery</strong> is driven by <strong>identical tool sequences</strong> and heuristics; similar-but-not-identical workflows may need manual skill authoring.  </li>
+<li><strong>Domain labels</strong> are <strong>keyword-based</strong>; they are for reporting and UX, not ground-truth classification.</li>
+</ul>
+<p>For product-level behaviour (Plan Mode, multi-agent, memory), see <a href="../features/">Features</a> and <a href="../architecture/">Architecture</a>.</p>
 
 
 
@@ -1016,7 +1106,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../skills/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Skills Reference">
+          <a href="../features/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Features">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1026,11 +1116,27 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Skills Reference
+                Features
               </div>
             </div>
           </a>
         
+        
+          
+          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Architecture
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

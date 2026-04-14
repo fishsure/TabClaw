@@ -12,20 +12,20 @@
         <meta name="author" content="Shuo Yu, Daoyu Wang, Qingchuan Li">
       
       
-        <link rel="canonical" href="https://fishsure.github.io/TabClaw/features/">
+        <link rel="canonical" href="https://agentr1.github.io/tab-claw/features/">
       
       
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../architecture/">
+        <link rel="next" href="../self_evolution/">
       
       
         
       
       
       <link rel="icon" href="../assets/logo_rmbg.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -256,6 +256,25 @@
     
   
   Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../self_evolution/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Self-evolution
 
       </a>
     </li>
@@ -626,6 +645,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../self_evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../architecture/" class="md-nav__link">
         
   
@@ -973,12 +1019,8 @@
 </tr>
 </tbody>
 </table>
-<p>The distiller provides the full list of existing built-in and custom skills so the LLM cannot create duplicates. A successful extraction produces either:</p>
-<ul>
-<li><strong>Code mode</strong> — generalised Python code running in the sandbox</li>
-<li><strong>Prompt mode</strong> — a reusable system prompt template</li>
-</ul>
-<p>The new skill is saved to <code>data/custom_skills.json</code>, announced in the chat with a 🧠 badge, and available for all future sessions immediately.</p>
+<p>The distiller provides the full list of existing built-in and custom skills so the LLM cannot create duplicates. A successful extraction produces a <strong>SKILL.md-style package</strong> under <code>data/skills/&lt;slug&gt;/</code> (same idea as ClawHub imports), announced in the chat with a 🧠 badge, and available for all future sessions immediately.</p>
+<p>Beyond one-shot distillation, TabClaw can <strong>mine recurring tool sequences</strong> from saved workflows (Discover), <strong>upgrade</strong> package skills after repeated negative feedback, and aggregate <strong>growth metrics</strong> (domains, efficiency, timeline). For a concise implementation-level description of this pipeline, see <strong><a href="../self_evolution/">Self-evolution</a></strong>.</p>
 <hr />
 <h2 id="persistent-memory">Persistent Memory<a class="headerlink" href="#persistent-memory" title="Permanent link">&para;</a></h2>
 <p>TabClaw extracts preferences and domain facts from every conversation and persists them across sessions in <code>data/memory.json</code>, organised into four categories:</p>
@@ -1117,13 +1159,13 @@
         
         
           
-          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture">
+          <a href="../self_evolution/" class="md-footer__link md-footer__link--next" aria-label="Next: Self-evolution">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Architecture
+                Self-evolution
               </div>
             </div>
             <div class="md-footer__button md-icon">

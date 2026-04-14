@@ -1,0 +1,39 @@
+# Build and deploy the Material MkDocs site to the gh-pages branch (GitHub Pages).
+name: Deploy docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - ".github/workflows/mkdocs.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mkdocs-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install MkDocs
+        run: pip install -r requirements-docs.txt
+
+      - name: Build & deploy to gh-pages
+        run: mkdocs gh-deploy --strict --force

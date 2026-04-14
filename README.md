@@ -121,6 +121,13 @@ Open **http://localhost:8000** in your browser. Click **一键体验** to try a 
 
 ## Docs
 
+Site: **[agentr1.github.io/tab-claw](https://agentr1.github.io/tab-claw/)** — rebuilt on every push to `main` that touches `docs/`, `mkdocs.yml`, or the docs workflow (GitHub Actions → `gh-pages`). Local preview:
+
+```bash
+pip install -r requirements-docs.txt
+mkdocs serve   # http://127.0.0.1:8000
+```
+
 | | |
 |---|---|
 | [✨ Features](docs/features.md) | Full feature details |

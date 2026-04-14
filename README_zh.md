@@ -123,6 +123,13 @@ bash run.sh
 
 ## 文档
 
+在线文档：**[agentr1.github.io/tab-claw](https://agentr1.github.io/tab-claw/)** — 向 `main` 推送并修改 `docs/`、`mkdocs.yml` 或文档工作流时，由 GitHub Actions 自动部署到 `gh-pages`。本地预览：
+
+```bash
+pip install -r requirements-docs.txt
+mkdocs serve   # http://127.0.0.1:8000
+```
+
 | | |
 |---|---|
 | [✨ 功能说明](docs/features.md) | 完整功能细节 |

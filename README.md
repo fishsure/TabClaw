@@ -124,6 +124,7 @@ Open **http://localhost:8000** in your browser. Click **一键体验** to try a 
 | | |
 |---|---|
 | [✨ Features](docs/features.md) | Full feature details |
+| [🧬 Self-evolution](docs/self_evolution.md) | How workflow logging, skill distillation, discovery, and feedback upgrades work |
 | [⚙️ Configuration](docs/configuration.md) | API providers, model selection |
 | [🏗️ Architecture](docs/architecture.md) | System design, project structure |
 | [🛠️ Skills Reference](docs/skills.md) | Built-in skills, custom skills, sandbox |

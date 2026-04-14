@@ -42,6 +42,7 @@ theme:
 nav:
   - Home: index.md
   - Features: features.md
+  - Self-evolution: self_evolution.md
   - Architecture: architecture.md
   - Skills Reference: skills.md
   - Configuration: configuration.md

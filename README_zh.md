@@ -126,6 +126,7 @@ bash run.sh
 | | |
 |---|---|
 | [✨ 功能说明](docs/features.md) | 完整功能细节 |
+| [🧬 自主进化机制](docs/self_evolution.md) | 工作流记录、技能提炼、模式发现与反馈升级的实现说明 |
 | [⚙️ 配置](docs/configuration.md) | API 提供商、模型选择 |
 | [🏗️ 架构](docs/architecture.md) | 系统设计、项目结构 |
 | [🛠️ 技能参考](docs/skills.md) | 内置技能、自定义技能、沙箱 |

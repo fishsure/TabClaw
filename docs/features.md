@@ -87,12 +87,9 @@ The LLM must judge:
 | Can be parameterised to work on any table | Near-duplicate of an existing built-in skill |
 | Combines multiple operations in a non-obvious way | Trivially simple (single filter or sort) |
 
-The distiller provides the full list of existing built-in and custom skills so the LLM cannot create duplicates. A successful extraction produces either:
+The distiller provides the full list of existing built-in and custom skills so the LLM cannot create duplicates. A successful extraction produces a **SKILL.md-style package** under `data/skills/<slug>/` (same idea as ClawHub imports), announced in the chat with a 🧠 badge, and available for all future sessions immediately.
 
-- **Code mode** — generalised Python code running in the sandbox
-- **Prompt mode** — a reusable system prompt template
-
-The new skill is saved to `data/custom_skills.json`, announced in the chat with a 🧠 badge, and available for all future sessions immediately.
+Beyond one-shot distillation, TabClaw can **mine recurring tool sequences** from saved workflows (Discover), **upgrade** package skills after repeated negative feedback, and aggregate **growth metrics** (domains, efficiency, timeline). For a concise implementation-level description of this pipeline, see **[Self-evolution](self_evolution.md)**.
 
 ---
 

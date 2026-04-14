@@ -12,13 +12,11 @@
         <meta name="author" content="Shuo Yu, Daoyu Wang, Qingchuan Li">
       
       
-        <link rel="canonical" href="https://agentr1.github.io/tab-claw/configuration/">
+        <link rel="canonical" href="https://agentr1.github.io/tab-claw/deployment/">
       
       
-        <link rel="prev" href="../skills/">
+        <link rel="prev" href="../configuration/">
       
-      
-        <link rel="next" href="../deployment/">
       
       
         
@@ -29,7 +27,7 @@
     
     
       
-        <title>Configuration - TabClaw</title>
+        <title>Deployment - TabClaw</title>
       
     
     
@@ -82,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#configuration" class="md-skip">
+        <a href="#deployment-guide-server" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Configuration
+              Deployment
             
           </span>
         </div>
@@ -321,11 +319,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../configuration/" class="md-tabs__link">
         
   
   
@@ -342,9 +338,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../deployment/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -540,6 +538,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -559,7 +584,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration
+    Deployment
   
 
     
@@ -577,7 +602,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration
+    Deployment
   
 
     
@@ -603,10 +628,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#settingtxt" class="md-nav__link">
+  <a href="#1-required-paths-and-environment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        setting.txt
+        1) Required paths and environment
       
     </span>
   </a>
@@ -614,10 +639,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-providers" class="md-nav__link">
+  <a href="#2-install-dependencies-inside-conda-env" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Providers
+        2) Install dependencies (inside conda env)
       
     </span>
   </a>
@@ -625,77 +650,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-selection" class="md-nav__link">
+  <a href="#3-create-a-systemd-service-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Selection
+        3) Create a systemd service (recommended)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Model Selection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deepseek-v3-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DeepSeek V3 Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#runtime-data" class="md-nav__link">
+  <a href="#4-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runtime Data
+        4) Operations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Runtime Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Memory File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-skills-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Skills File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#5-verify-service-health" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        5) Verify service health
       
     </span>
   </a>
@@ -706,33 +686,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../deployment/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Deployment
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -764,10 +717,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#settingtxt" class="md-nav__link">
+  <a href="#1-required-paths-and-environment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        setting.txt
+        1) Required paths and environment
       
     </span>
   </a>
@@ -775,10 +728,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-providers" class="md-nav__link">
+  <a href="#2-install-dependencies-inside-conda-env" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Providers
+        2) Install dependencies (inside conda env)
       
     </span>
   </a>
@@ -786,77 +739,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-selection" class="md-nav__link">
+  <a href="#3-create-a-systemd-service-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Selection
+        3) Create a systemd service (recommended)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Model Selection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deepseek-v3-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DeepSeek V3 Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#runtime-data" class="md-nav__link">
+  <a href="#4-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runtime Data
+        4) Operations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Runtime Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#memory-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Memory File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-skills-file-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Skills File Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#5-verify-service-health" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        5) Verify service health
       
     </span>
   </a>
@@ -880,155 +788,66 @@
 
 
 
-<h1 id="configuration">⚙️ Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
-<h2 id="settingtxt">setting.txt<a class="headerlink" href="#settingtxt" title="Permanent link">&para;</a></h2>
-<p>Copy the example file and fill in your credentials:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cp<span class="w"> </span>setting.txt.example<span class="w"> </span>setting.txt
+<h1 id="deployment-guide-server">Deployment Guide (Server)<a class="headerlink" href="#deployment-guide-server" title="Permanent link">&para;</a></h1>
+<p>This guide is for long-running deployment of <code>TabClaw</code> on Linux servers.</p>
+<h2 id="1-required-paths-and-environment">1) Required paths and environment<a class="headerlink" href="#1-required-paths-and-environment" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Project path: <code>/root/TabClaw-dev/TabClaw</code></li>
+<li>Conda env: <code>tabclaw</code></li>
+<li>Service port: <code>8018</code></li>
+</ul>
+<p>Before deploying, make sure <code>setting.txt</code> exists in the project root and contains valid values:</p>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="na">API_KEY</span><span class="o">=</span><span class="s">&quot;...&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="na">BASE_URL</span><span class="o">=</span><span class="s">&quot;https://.../v1&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="na">DEFAULT_MODEL</span><span class="o">=</span><span class="s">deepseek-ai/DeepSeek-V3</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="na">DEFAULT_MODEL_EXTRA_JSON</span><span class="o">=</span>
 </span></code></pre></div>
-<p><code>setting.txt</code> is listed in <code>.gitignore</code> and will <strong>never</strong> be committed to git.</p>
-<div class="language-ini highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Your LLM API key</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="na">API_KEY</span><span class="o">=</span><span class="s">your_api_key_here</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># API base URL (OpenAI-compatible endpoint)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="na">BASE_URL</span><span class="o">=</span><span class="s">https://api.openai.com/v1</span>
+<h2 id="2-install-dependencies-inside-conda-env">2) Install dependencies (inside conda env)<a class="headerlink" href="#2-install-dependencies-inside-conda-env" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>/root/TabClaw-dev/TabClaw
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>conda<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>tabclaw<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 </span></code></pre></div>
-<hr />
-<h2 id="supported-providers">Supported Providers<a class="headerlink" href="#supported-providers" title="Permanent link">&para;</a></h2>
-<p>TabClaw uses the <strong>OpenAI-compatible API format</strong> (<code>/chat/completions</code> with streaming and tool/function calling). It works with any provider that supports this interface:</p>
-<table>
-<thead>
-<tr>
-<th>Provider</th>
-<th>BASE_URL</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>OpenAI</td>
-<td><code>https://api.openai.com/v1</code></td>
-<td>gpt-4o, gpt-4-turbo</td>
-</tr>
-<tr>
-<td>DeepSeek</td>
-<td><code>https://api.deepseek.com/v1</code></td>
-<td>Default: DeepSeek-V3</td>
-</tr>
-<tr>
-<td>SiliconFlow</td>
-<td><code>https://api.siliconflow.cn/v1</code></td>
-<td>Many open-source models</td>
-</tr>
-<tr>
-<td>Ollama (local)</td>
-<td><code>http://localhost:11434/v1</code></td>
-<td>Requires tool-call support</td>
-</tr>
-<tr>
-<td>Any OpenAI-compatible API</td>
-<td>your endpoint</td>
-<td>—</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="model-selection">Model Selection<a class="headerlink" href="#model-selection" title="Permanent link">&para;</a></h2>
-<p>The default model is set in <code>config.py</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">DEFAULT_MODEL</span> <span class="o">=</span> <span class="s2">&quot;deepseek-ai/DeepSeek-V3&quot;</span>
+<h2 id="3-create-a-systemd-service-recommended">3) Create a systemd service (recommended)<a class="headerlink" href="#3-create-a-systemd-service-recommended" title="Permanent link">&para;</a></h2>
+<p>Create <code>/etc/systemd/system/tabclaw.service</code>:</p>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[Unit]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="na">Description</span><span class="o">=</span><span class="s">TabClaw Service</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">[Service]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="na">Type</span><span class="o">=</span><span class="s">simple</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="na">User</span><span class="o">=</span><span class="s">root</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="na">WorkingDirectory</span><span class="o">=</span><span class="s">/root/TabClaw-dev/TabClaw</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="na">ExecStart</span><span class="o">=</span><span class="s">/root/anaconda3/bin/conda run -n tabclaw python -m uvicorn app:app --host 0.0.0.0 --port 8018</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="na">Restart</span><span class="o">=</span><span class="s">always</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="na">RestartSec</span><span class="o">=</span><span class="s">5</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="na">Environment</span><span class="o">=</span><span class="s">PYTHONUNBUFFERED=1</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="k">[Install]</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
 </span></code></pre></div>
-<p>Change this to any model your provider supports. TabClaw requires a model that supports <strong>parallel tool/function calling</strong> and <strong>streaming</strong>. Recommended models:</p>
-<table>
-<thead>
-<tr>
-<th>Model</th>
-<th>Strengths</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>deepseek-ai/DeepSeek-V3</code></td>
-<td>Strong reasoning, fast, cost-effective — default</td>
-</tr>
-<tr>
-<td><code>gpt-4o</code></td>
-<td>Best instruction following, reliable tool call JSON</td>
-</tr>
-<tr>
-<td><code>deepseek-chat</code></td>
-<td>DeepSeek native endpoint alias</td>
-</tr>
-<tr>
-<td><code>qwen2.5-72b-instruct</code></td>
-<td>Good open-source alternative via SiliconFlow</td>
-</tr>
-</tbody>
-</table>
-<h3 id="deepseek-v3-notes">DeepSeek V3 Notes<a class="headerlink" href="#deepseek-v3-notes" title="Permanent link">&para;</a></h3>
-<p>TabClaw includes a specific workaround for DeepSeek V3's tool call behaviour: the model occasionally leaks raw tool-call markup (<code>&lt;｜tool▁call▁begin｜&gt;…</code>) into <code>delta.content</code> during streaming. The executor detects this marker and suppresses the affected chunks, ensuring the chat UI only displays clean reasoning text. If you switch to a different model, this suppression is inert and does not affect output.</p>
-<hr />
-<h2 id="runtime-data">Runtime Data<a class="headerlink" href="#runtime-data" title="Permanent link">&para;</a></h2>
-<p>The following files are created automatically at runtime and are gitignored:</p>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Contents</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>data/memory.json</code></td>
-<td>User memory — preferences, domain knowledge, context, history insights</td>
-</tr>
-<tr>
-<td><code>data/custom_skills.json</code></td>
-<td>Custom skills saved from the UI or learned by the skill distiller</td>
-</tr>
-<tr>
-<td><code>uploads/</code></td>
-<td>Temporarily uploaded CSV/Excel files</td>
-</tr>
-</tbody>
-</table>
-<h3 id="memory-file-format">Memory File Format<a class="headerlink" href="#memory-file-format" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;preferences&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;output_language&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Chinese&quot;</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">&quot;updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-15T10:23:41+00:00&quot;</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">&quot;domain_knowledge&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">&quot;user_context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">&quot;history_insights&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
+<p>Enable and start:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>systemctl<span class="w"> </span>daemon-reload
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>tabclaw
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>systemctl<span class="w"> </span>status<span class="w"> </span>tabclaw<span class="w"> </span>--no-pager
 </span></code></pre></div>
-<h3 id="custom-skills-file-format">Custom Skills File Format<a class="headerlink" href="#custom-skills-file-format" title="Permanent link">&para;</a></h3>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">[</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p">{</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a1b2c3d4&quot;</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit_margin_ranking&quot;</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rank products or regions by profit margin (profit / revenue).&quot;</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# generalised Python code …&quot;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">]</span>
+<h2 id="4-operations">4) Operations<a class="headerlink" href="#4-operations" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># restart after code/config update</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>systemctl<span class="w"> </span>restart<span class="w"> </span>tabclaw
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># stop service</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>systemctl<span class="w"> </span>stop<span class="w"> </span>tabclaw
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># live logs</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>journalctl<span class="w"> </span>-u<span class="w"> </span>tabclaw<span class="w"> </span>-f
 </span></code></pre></div>
-<hr />
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>fastapi
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>uvicorn[standard]
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>python-multipart
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>aiofiles
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>openai&gt;=1.0
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>pandas
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>openpyxl
+<h2 id="5-verify-service-health">5) Verify service health<a class="headerlink" href="#5-verify-service-health" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ss<span class="w"> </span>-ltnp<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;/:8018 /{print}&#39;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;%{http_code}\n&quot;</span><span class="w"> </span>http://127.0.0.1:8018/
 </span></code></pre></div>
-<p>Install with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-</span></code></pre></div>
-<p>The <code>openai</code> SDK is used as the async HTTP client for any OpenAI-compatible endpoint — no OpenAI account is required.</p>
+<p>Expected:</p>
+<ul>
+<li><code>ss</code> shows a Python process listening on <code>0.0.0.0:8018</code></li>
+<li>HTTP status code is <code>200</code></li>
+</ul>
 
 
 
@@ -1064,7 +883,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../skills/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Skills Reference">
+          <a href="../configuration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1074,27 +893,11 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Skills Reference
+                Configuration
               </div>
             </div>
           </a>
         
-        
-          
-          <a href="../deployment/" class="md-footer__link md-footer__link--next" aria-label="Next: Deployment">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Deployment
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
-            </div>
-          </a>
         
       </nav>
     

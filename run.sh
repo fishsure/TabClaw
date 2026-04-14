@@ -6,7 +6,7 @@ echo "=== TabClaw Startup ==="
 
 # Install dependencies
 echo "Installing Python dependencies..."
-pip3 install -q fastapi "uvicorn[standard]" python-multipart aiofiles
+pip3 install -q -r requirements.txt
 
 echo "Starting TabClaw server..."
 echo "Open http://localhost:8000 in your browser"

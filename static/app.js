@@ -81,6 +81,10 @@ class TabClawApp {
       clarifying: false,
       // Workflow tracking: maps msgId → session_id from backend
       currentWorkflowId: null,
+      // Auth and API-key settings
+      currentUser: null,
+      providers: [],
+      defaultModel: '',
     };
 
     // Stores the workflow_id of the last completed response for implicit feedback
@@ -104,11 +108,25 @@ class TabClawApp {
     this._lang = localStorage.getItem('lang') || 'en';
     this._applyTheme(localStorage.getItem('theme') || 'dark');
     this._bindEvents();
+    this._loadCurrentUser();
+    this._autoresize(document.getElementById('message-input'));
+    this._applyLangLabels();
+  }
+
+  async _loadCurrentUser() {
+    try {
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+    } catch (e) {
+      window.location.href = '/';
+      return;
+    }
     this._loadTables();
     this._loadSkills();
     this._loadMemory();
-    this._autoresize(document.getElementById('message-input'));
-    this._applyLangLabels();
+    this._loadProviders();
   }
 
   _bindEvents() {
@@ -196,6 +214,18 @@ class TabClawApp {
       if (e.key === 'Enter') this._forgetMemory();
     });
     document.getElementById('clear-memory-btn').addEventListener('click', () => this._clearAllMemory());
+
+    // Settings
+    const logoutBtn = document.getElementById('settings-logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => this._logout());
+    const saveKeyBtn = document.getElementById('settings-save-key-btn');
+    if (saveKeyBtn) saveKeyBtn.addEventListener('click', () => this._saveApiKey());
+    const clearKeyBtn = document.getElementById('settings-clear-key-btn');
+    if (clearKeyBtn) clearKeyBtn.addEventListener('click', () => this._clearApiKey());
+    const providerSel = document.getElementById('settings-provider');
+    if (providerSel) providerSel.addEventListener('change', () => this._onProviderChange());
+    const modelSel = document.getElementById('settings-model-select');
+    if (modelSel) modelSel.addEventListener('change', () => this._onModelSelectChange());
 
     // Table modal pagination
     document.getElementById('table-modal-prev').addEventListener('click', () => this._tableModalPage(-1));
@@ -353,7 +383,7 @@ class TabClawApp {
     const clearLabel = document.querySelector('#clear-chat-btn .btn-label');
     if (clearLabel) clearLabel.textContent = zh ? '清空对话' : 'Clear Chat';
     // Sidebar tabs
-    const tabMap = { tables: ['Tables', '数据表'], skills: ['Skills', '技能'], memory: ['Memory', '记忆'] };
+    const tabMap = { tables: ['Tables', '数据表'], skills: ['Skills', '技能'], memory: ['Memory', '记忆'], settings: ['Settings', '设置'] };
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
       const [en, zh_] = tabMap[tab.dataset.tab] || [];
       if (en) tab.textContent = zh ? zh_ : en;
@@ -499,9 +529,13 @@ class TabClawApp {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const res = await fetch(path, opts);
+    if (res.status === 401) {
+      window.location.href = '/';
+      throw new Error('Unauthenticated');
+    }
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || `HTTP ${res.status}`);
+      const data = await res.json().catch(() => null);
+      throw new Error((data && data.detail) || `HTTP ${res.status}`);
     }
     return res.json();
   }
@@ -1007,6 +1041,15 @@ class TabClawApp {
 
       case 'implicit_feedback_applied':
         this._handleImplicitFeedbackApplied(event);
+        break;
+
+      case 'token_update':
+        if (this.state.currentUser) {
+          this.state.currentUser.token_used = event.used;
+          this.state.currentUser.token_budget = event.budget;
+          this.state.currentUser.has_own_key = event.has_own_key;
+          this._updateTokenDisplay();
+        }
         break;
 
       case 'error':
@@ -2354,6 +2397,202 @@ class TabClawApp {
     body.appendChild(div);
     this._scrollChat();
     this._notify(`New skill learned: ${skill.name}`, 'success');
+  }
+
+  // -----------------------------------------------------------------------
+  // Auth and settings
+  // -----------------------------------------------------------------------
+
+  _renderUserInfo() {
+    const u = this.state.currentUser;
+    if (!u) return;
+    const nameEl = document.getElementById('settings-username');
+    if (nameEl) nameEl.textContent = u.username;
+    const badge = document.getElementById('settings-own-key-badge');
+    if (badge) badge.classList.toggle('hidden', !u.has_own_key);
+  }
+
+  _updateTokenDisplay() {
+    const u = this.state.currentUser;
+    if (!u) return;
+    const quotaSection = document.getElementById('settings-quota-section');
+    if (quotaSection) quotaSection.classList.toggle('hidden', u.has_own_key);
+    const footer = document.getElementById('token-quota-footer');
+    if (footer) footer.classList.toggle('hidden', u.has_own_key);
+
+    const keyStatus = document.getElementById('settings-key-status');
+    const keyStatusText = document.getElementById('settings-key-status-text');
+    if (keyStatus && keyStatusText) {
+      keyStatus.classList.remove('hidden', 'no-key');
+      if (u.has_own_key) {
+        const modelLabel = u.own_model ? ` (model: ${u.own_model})` : '';
+        keyStatusText.textContent = `Custom API key configured${modelLabel}`;
+      } else {
+        keyStatus.classList.add('no-key');
+        keyStatusText.textContent = 'Using platform free quota (no custom key)';
+      }
+    }
+
+    if (!u.has_own_key) {
+      const usedK = Math.round((u.token_used || 0) / 1000);
+      const budgetK = Math.round((u.token_budget || 1000000) / 1000);
+      const pct = Math.min(100, Math.round(((u.token_used || 0) / (u.token_budget || 1)) * 100));
+
+      const fill = document.getElementById('settings-token-fill');
+      if (fill) fill.style.width = pct + '%';
+      const text = document.getElementById('settings-token-text');
+      if (text) text.textContent = `${usedK.toLocaleString()}k / ${budgetK.toLocaleString()}k tokens used`;
+      const footerText = document.getElementById('token-footer-text');
+      if (footerText) footerText.textContent = `${usedK.toLocaleString()}k / ${budgetK.toLocaleString()}k`;
+    }
+
+    const badge = document.getElementById('settings-own-key-badge');
+    if (badge) badge.classList.toggle('hidden', !u.has_own_key);
+  }
+
+  async _logout() {
+    try {
+      await this._api('POST', '/api/auth/logout');
+    } catch {}
+    window.location.href = '/';
+  }
+
+  async _loadProviders() {
+    try {
+      const data = await this._api('GET', '/api/settings/providers');
+      this.state.providers = data.providers || [];
+      this.state.defaultModel = data.default_model || '';
+      this._renderProviderSelector();
+    } catch (e) {
+      // Non-critical: user can still type model/base_url manually
+    }
+  }
+
+  _renderProviderSelector() {
+    const sel = document.getElementById('settings-provider');
+    if (!sel) return;
+    const providers = this.state.providers || [];
+    sel.innerHTML = '<option value="">- Select provider -</option>' +
+      providers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+    const u = this.state.currentUser;
+    if (u && u.has_own_key && u.own_base_url) {
+      const matched = providers.find(p => p.base_url && p.base_url === u.own_base_url);
+      if (matched) {
+        sel.value = matched.id;
+        this._onProviderChange(u.own_model || '');
+      } else {
+        const otherProv = providers.find(p => p.id === 'other');
+        if (otherProv) {
+          sel.value = 'other';
+          this._onProviderChange(u.own_model || '');
+          const baseInput = document.getElementById('settings-base-url');
+          if (baseInput) baseInput.value = u.own_base_url;
+        }
+      }
+    }
+  }
+
+  _onProviderChange(presetModel = '') {
+    const providers = this.state.providers || [];
+    const sel = document.getElementById('settings-provider');
+    const modelSel = document.getElementById('settings-model-select');
+    const modelCustom = document.getElementById('settings-model-custom');
+    const baseUrlInput = document.getElementById('settings-base-url');
+    const noteEl = document.getElementById('settings-provider-note');
+    if (!sel || !modelSel || !modelCustom || !baseUrlInput || !noteEl) return;
+
+    const provider = providers.find(p => p.id === sel.value);
+    noteEl.classList.add('hidden');
+    noteEl.textContent = '';
+
+    if (!provider) {
+      modelSel.innerHTML = '<option value="">- Select provider first -</option>';
+      modelCustom.style.display = 'none';
+      baseUrlInput.value = '';
+      return;
+    }
+
+    baseUrlInput.value = provider.base_url || '';
+
+    if (provider.custom || !provider.models || provider.models.length === 0) {
+      modelSel.innerHTML = '<option value="__custom__">Custom...</option>';
+      modelCustom.style.display = 'block';
+      modelCustom.value = presetModel || this.state.defaultModel || '';
+    } else {
+      const opts = provider.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+      modelSel.innerHTML = opts + '<option value="__custom__">Custom...</option>';
+      modelSel.value = presetModel && provider.models.find(m => m.id === presetModel)
+        ? presetModel
+        : provider.models[0].id;
+      const isCustom = modelSel.value === '__custom__';
+      modelCustom.style.display = isCustom ? 'block' : 'none';
+      if (!isCustom) modelCustom.value = '';
+    }
+  }
+
+  _onModelSelectChange() {
+    const modelSel = document.getElementById('settings-model-select');
+    const modelCustom = document.getElementById('settings-model-custom');
+    if (!modelSel || !modelCustom) return;
+    if (modelSel.value === '__custom__') {
+      modelCustom.style.display = 'block';
+      modelCustom.focus();
+    } else {
+      modelCustom.style.display = 'none';
+      modelCustom.value = '';
+    }
+  }
+
+  _getSelectedModel() {
+    const modelSel = document.getElementById('settings-model-select');
+    const modelCustom = document.getElementById('settings-model-custom');
+    if (!modelSel) return '';
+    if (modelSel.value === '__custom__' || modelSel.value === '') {
+      return (modelCustom && modelCustom.value.trim()) || this.state.defaultModel || '';
+    }
+    return modelSel.value;
+  }
+
+  async _saveApiKey() {
+    const key = (document.getElementById('settings-api-key')?.value || '').trim();
+    const url = (document.getElementById('settings-base-url')?.value || '').trim();
+    const model = this._getSelectedModel();
+    if (!key) { this._notify('Please enter API key', 'error'); return; }
+    if (!model) { this._notify('Please select or enter a model', 'error'); return; }
+
+    const btn = document.getElementById('settings-save-key-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+    try {
+      await this._api('POST', '/api/settings/api-key', { api_key: key, base_url: url, model });
+      const keyInput = document.getElementById('settings-api-key');
+      if (keyInput) keyInput.value = '';
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+      this._notify(`API key saved (model: ${model})`, 'success');
+    } catch (e) {
+      this._notify(`Save failed: ${e.message}`, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+    }
+  }
+
+  async _clearApiKey() {
+    if (!confirm('Clear custom API key and switch back to free quota?')) return;
+    try {
+      await this._api('DELETE', '/api/settings/api-key');
+      const user = await this._api('GET', '/api/auth/me');
+      this.state.currentUser = user;
+      this._renderUserInfo();
+      this._updateTokenDisplay();
+      const provSel = document.getElementById('settings-provider');
+      if (provSel) { provSel.value = ''; this._onProviderChange(); }
+      this._notify('Custom API key cleared', 'success');
+    } catch (e) {
+      this._notify(`Clear failed: ${e.message}`, 'error');
+    }
   }
 
   // -----------------------------------------------------------------------

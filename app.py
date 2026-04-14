@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -23,6 +23,10 @@ from agent.workflow_recorder import (
     add_custom_domain, list_domains,
 )
 from skills.registry import SkillRegistry
+from auth import db as auth_db
+from auth import jwt_utils
+from auth.dependencies import get_current_user, get_current_user_optional
+from auth.crypto import decrypt_api_key, encrypt_api_key
 
 # ---------------------------------------------------------------------------
 # App & component setup
@@ -30,16 +34,10 @@ from skills.registry import SkillRegistry
 
 app = FastAPI(title="TabClaw", version="0.1.0")
 
-llm = LLMClient(api_key=API_KEY, base_url=BASE_URL, model=DEFAULT_MODEL, model_extra_params=DEFAULT_MODEL_EXTRA_PARAMS)
-skill_registry = SkillRegistry()
-memory_manager = MemoryManager()
-executor = AgentExecutor(llm, skill_registry, memory_manager)
-multi_executor = MultiAgentExecutor(llm, skill_registry, memory_manager)
-planner = Planner(llm, memory_manager)
+auth_db.init_db()
 
-# Global state (single-user local app)
-tables: Dict[str, Dict] = {}          # table_id -> {name, df, source, filename}
-chat_history: List[Dict] = []
+# Per-user runtime state
+_user_sessions: Dict[str, Dict[str, Any]] = {}
 
 AUTO_COMPACT_THRESHOLD = 20   # messages before auto-compaction kicks in
 
@@ -64,6 +62,78 @@ def _sanitize_column_names(names: List[str]) -> List[str]:
     return out
 
 
+def _make_llm_for_user(user: dict) -> LLMClient:
+    """Use user's own API key if configured, otherwise fall back to admin key quota."""
+    if user.get("own_api_key_enc"):
+        try:
+            own_key = decrypt_api_key(user["own_api_key_enc"])
+            own_url = user.get("own_base_url") or BASE_URL
+            own_model = user.get("own_model") or DEFAULT_MODEL
+            return LLMClient(
+                api_key=own_key,
+                base_url=own_url,
+                model=own_model,
+                model_extra_params=DEFAULT_MODEL_EXTRA_PARAMS,
+            )
+        except Exception:
+            pass
+    budget = user.get("token_budget", 1_000_000)
+    used = user.get("token_used", 0)
+    if budget <= 0 or used >= budget:
+        raise HTTPException(
+            status_code=402,
+            detail="Free token quota exhausted. Please configure your own API key in Settings.",
+        )
+    return LLMClient(
+        api_key=API_KEY,
+        base_url=BASE_URL,
+        model=DEFAULT_MODEL,
+        model_extra_params=DEFAULT_MODEL_EXTRA_PARAMS,
+    )
+
+
+def get_user_state(user: dict) -> Dict[str, Any]:
+    uid = str(user["id"])
+    if uid not in _user_sessions:
+        llm = _make_llm_for_user(user)
+        skill_registry = SkillRegistry()
+        memory_manager = MemoryManager()
+        executor = AgentExecutor(llm, skill_registry, memory_manager)
+        multi_executor = MultiAgentExecutor(llm, skill_registry, memory_manager)
+        planner = Planner(llm, memory_manager)
+        _user_sessions[uid] = {
+            "tables": {},
+            "chat_history": [],
+            "llm": llm,
+            "skill_registry": skill_registry,
+            "memory_manager": memory_manager,
+            "executor": executor,
+            "multi_executor": multi_executor,
+            "planner": planner,
+        }
+    return _user_sessions[uid]
+
+
+def _refresh_user_llm(user: dict):
+    uid = str(user["id"])
+    if uid not in _user_sessions:
+        return
+    try:
+        new_llm = _make_llm_for_user(user)
+    except HTTPException:
+        new_llm = LLMClient(
+            api_key=API_KEY,
+            base_url=BASE_URL,
+            model=DEFAULT_MODEL,
+            model_extra_params=DEFAULT_MODEL_EXTRA_PARAMS,
+        )
+    s = _user_sessions[uid]
+    s["llm"] = new_llm
+    s["executor"].llm = new_llm
+    s["multi_executor"].llm = new_llm
+    s["planner"].llm = new_llm
+
+
 # Static files
 STATIC_DIR = Path(__file__).parent / "static"
 ASSET_DIR = Path(__file__).parent / "asset"
@@ -72,8 +142,222 @@ app.mount("/asset", StaticFiles(directory=str(ASSET_DIR)), name="asset")
 
 
 @app.get("/")
-async def root():
-    return FileResponse(str(STATIC_DIR / "index.html"))
+async def root(user: Optional[dict] = Depends(get_current_user_optional)):
+    if user is None:
+        r = FileResponse(str(STATIC_DIR / "login.html"))
+    else:
+        r = FileResponse(str(STATIC_DIR / "index.html"))
+    r.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+
+class RegisterBody(BaseModel):
+    username: str
+    password: str
+
+
+class LoginBody(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/api/auth/register")
+async def register(body: RegisterBody):
+    if not body.username or len(body.username) < 3:
+        raise HTTPException(400, "Username must be at least 3 characters")
+    if not body.password or len(body.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    user = auth_db.create_user(body.username, body.password)
+    if user is None:
+        raise HTTPException(409, "Username already taken")
+    token = jwt_utils.create_token(user["id"], user["username"])
+    payload = jwt_utils.verify_token(token)
+    jti = payload["jti"]
+    import datetime as _dt
+    exp_iso = _dt.datetime.fromtimestamp(payload["exp"], tz=_dt.timezone.utc).isoformat()
+    auth_db.add_session(jti, user["id"], exp_iso)
+    response = JSONResponse({"status": "ok", "username": user["username"]})
+    response.set_cookie(
+        "session",
+        token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 24 * 3600,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/login")
+async def login(body: LoginBody):
+    user = auth_db.get_user_by_username(body.username)
+    if not user or not auth_db.verify_password(user, body.password):
+        raise HTTPException(401, "Invalid username or password")
+    token = jwt_utils.create_token(user["id"], user["username"])
+    payload = jwt_utils.verify_token(token)
+    jti = payload["jti"]
+    import datetime as _dt
+    exp_iso = _dt.datetime.fromtimestamp(payload["exp"], tz=_dt.timezone.utc).isoformat()
+    auth_db.add_session(jti, user["id"], exp_iso)
+    response = JSONResponse({"status": "ok", "username": user["username"]})
+    response.set_cookie(
+        "session",
+        token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 24 * 3600,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+async def logout(user: dict = Depends(get_current_user)):
+    response = JSONResponse({"status": "ok"})
+    response.delete_cookie("session", path="/")
+    return response
+
+
+@app.get("/api/auth/me")
+async def me(user: dict = Depends(get_current_user)):
+    fresh = auth_db.get_user_by_id(user["id"])
+    return {
+        "username": fresh["username"],
+        "token_budget": fresh["token_budget"],
+        "token_used": fresh["token_used"],
+        "has_own_key": bool(fresh.get("own_api_key_enc")),
+        "own_model": fresh.get("own_model") or "",
+        "own_base_url": fresh.get("own_base_url") or "",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Settings endpoints
+# ---------------------------------------------------------------------------
+
+class ApiKeyBody(BaseModel):
+    api_key: str
+    base_url: str = ""
+    model: str = ""
+
+
+@app.post("/api/settings/api-key")
+async def save_api_key(body: ApiKeyBody, user: dict = Depends(get_current_user)):
+    if not body.api_key:
+        raise HTTPException(400, "api_key is required")
+    encrypted = encrypt_api_key(body.api_key)
+    base_url = body.base_url.strip() or BASE_URL
+    model = body.model.strip() or DEFAULT_MODEL
+    auth_db.save_user_api_key(user["id"], encrypted, base_url, model)
+    fresh = auth_db.get_user_by_id(user["id"])
+    _refresh_user_llm(fresh)
+    return {"status": "ok"}
+
+
+@app.get("/api/settings/providers")
+async def get_providers():
+    return {
+        "default_model": DEFAULT_MODEL,
+        "providers": [
+            {
+                "id": "deepseek",
+                "name": "DeepSeek",
+                "base_url": "https://api.deepseek.com/v1",
+                "models": [
+                    {"id": "deepseek-chat", "name": "DeepSeek-V3 (deepseek-chat)"},
+                    {"id": "deepseek-reasoner", "name": "DeepSeek-R1 (deepseek-reasoner)"},
+                ],
+            },
+            {
+                "id": "openai",
+                "name": "OpenAI",
+                "base_url": "https://api.openai.com/v1",
+                "models": [
+                    {"id": "gpt-4o", "name": "GPT-4o"},
+                    {"id": "gpt-4o-mini", "name": "GPT-4o mini"},
+                    {"id": "gpt-4-turbo", "name": "GPT-4 Turbo"},
+                    {"id": "o1", "name": "o1"},
+                    {"id": "o1-mini", "name": "o1-mini"},
+                    {"id": "o3-mini", "name": "o3-mini"},
+                ],
+            },
+            {
+                "id": "zhipuai",
+                "name": "智谱 AI (ZhipuAI)",
+                "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                "models": [
+                    {"id": "glm-4-plus", "name": "GLM-4-Plus"},
+                    {"id": "glm-4-air", "name": "GLM-4-Air"},
+                    {"id": "glm-4-flash", "name": "GLM-4-Flash (免费)"},
+                    {"id": "glm-z1-flash", "name": "GLM-Z1-Flash (推理·免费)"},
+                ],
+            },
+            {
+                "id": "openrouter",
+                "name": "OpenRouter（多模型代理·支持 Claude）",
+                "base_url": "https://openrouter.ai/api/v1",
+                "models": [
+                    {"id": "anthropic/claude-opus-4-5", "name": "Claude Opus 4.5"},
+                    {"id": "anthropic/claude-sonnet-4-5", "name": "Claude Sonnet 4.5"},
+                    {"id": "anthropic/claude-haiku-3-5", "name": "Claude Haiku 3.5"},
+                    {"id": "openai/gpt-4o", "name": "GPT-4o"},
+                    {"id": "google/gemini-2.5-pro", "name": "Gemini 2.5 Pro"},
+                    {"id": "deepseek/deepseek-chat", "name": "DeepSeek-V3"},
+                ],
+            },
+            {
+                "id": "moonshot",
+                "name": "月之暗面 (Moonshot)",
+                "base_url": "https://api.moonshot.cn/v1",
+                "models": [
+                    {"id": "moonshot-v1-8k", "name": "Moonshot v1 8k"},
+                    {"id": "moonshot-v1-32k", "name": "Moonshot v1 32k"},
+                    {"id": "moonshot-v1-128k", "name": "Moonshot v1 128k"},
+                ],
+            },
+            {
+                "id": "qwen",
+                "name": "阿里云百炼 (Qwen/DashScope)",
+                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "models": [
+                    {"id": "qwen-max", "name": "Qwen Max"},
+                    {"id": "qwen-plus", "name": "Qwen Plus"},
+                    {"id": "qwen-turbo", "name": "Qwen Turbo"},
+                    {"id": "qwen-long", "name": "Qwen Long"},
+                ],
+            },
+            {
+                "id": "siliconflow",
+                "name": "硅基流动 (SiliconFlow)",
+                "base_url": "https://api.siliconflow.cn/v1",
+                "models": [
+                    {"id": "deepseek-ai/DeepSeek-V3", "name": "DeepSeek-V3"},
+                    {"id": "deepseek-ai/DeepSeek-R1", "name": "DeepSeek-R1"},
+                    {"id": "Qwen/Qwen2.5-72B-Instruct", "name": "Qwen2.5-72B"},
+                ],
+            },
+            {
+                "id": "other",
+                "name": "其他 / 自定义",
+                "base_url": "",
+                "models": [],
+                "custom": True,
+            },
+        ],
+    }
+
+
+@app.delete("/api/settings/api-key")
+async def clear_api_key(user: dict = Depends(get_current_user)):
+    auth_db.clear_user_api_key(user["id"])
+    fresh = auth_db.get_user_by_id(user["id"])
+    _refresh_user_llm(fresh)
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +365,9 @@ async def root():
 # ---------------------------------------------------------------------------
 
 @app.post("/api/upload")
-async def upload_table(file: UploadFile = File(...)):
+async def upload_table(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    tables = s["tables"]
     content = await file.read()
     fname = file.filename or "table"
     try:
@@ -124,8 +410,9 @@ class UpdateTableBody(BaseModel):
 
 
 @app.post("/api/tables/create")
-async def create_blank_table(body: CreateTableBody):
+async def create_blank_table(body: CreateTableBody, user: dict = Depends(get_current_user)):
     """Create an empty table for manual entry or paste (stored like uploaded tables)."""
+    tables = get_user_state(user)["tables"]
     nrows = max(0, min(int(body.rows), MANUAL_MAX_ROWS))
     ncols = max(1, min(int(body.cols), MANUAL_MAX_COLS))
     col_names = [f"Col{i + 1}" for i in range(ncols)]
@@ -147,7 +434,8 @@ async def create_blank_table(body: CreateTableBody):
 
 
 @app.get("/api/tables")
-async def list_tables():
+async def list_tables(user: dict = Depends(get_current_user)):
+    tables = get_user_state(user)["tables"]
     result = []
     for tid, t in tables.items():
         df = t["df"]
@@ -163,7 +451,13 @@ async def list_tables():
 
 
 @app.get("/api/tables/{table_id}")
-async def get_table(table_id: str, page: int = 1, page_size: int = 50):
+async def get_table(
+    table_id: str,
+    page: int = 1,
+    page_size: int = 50,
+    user: dict = Depends(get_current_user),
+):
+    tables = get_user_state(user)["tables"]
     if table_id not in tables:
         raise HTTPException(404, "Table not found")
     t = tables[table_id]
@@ -195,8 +489,9 @@ async def get_table(table_id: str, page: int = 1, page_size: int = 50):
 
 
 @app.put("/api/tables/{table_id}")
-async def update_manual_table(table_id: str, body: UpdateTableBody):
+async def update_manual_table(table_id: str, body: UpdateTableBody, user: dict = Depends(get_current_user)):
     """Replace data for a manually created table (for in-app editing / paste)."""
+    tables = get_user_state(user)["tables"]
     if table_id not in tables:
         raise HTTPException(404, "Table not found")
     t = tables[table_id]
@@ -234,7 +529,8 @@ async def update_manual_table(table_id: str, body: UpdateTableBody):
 
 
 @app.delete("/api/tables/{table_id}")
-async def delete_table(table_id: str):
+async def delete_table(table_id: str, user: dict = Depends(get_current_user)):
+    tables = get_user_state(user)["tables"]
     if table_id not in tables:
         raise HTTPException(404, "Table not found")
     del tables[table_id]
@@ -242,7 +538,8 @@ async def delete_table(table_id: str):
 
 
 @app.get("/api/tables/{table_id}/download")
-async def download_table(table_id: str):
+async def download_table(table_id: str, user: dict = Depends(get_current_user)):
+    tables = get_user_state(user)["tables"]
     if table_id not in tables:
         raise HTTPException(404, "Table not found")
     df = tables[table_id]["df"]
@@ -287,18 +584,27 @@ def _sse(obj: Any) -> str:
 
 
 @app.post("/api/generate-plan")
-async def generate_plan(request: PlanRequest):
-    plan = await planner.generate(request.message, tables)
+async def generate_plan(request: PlanRequest, user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    plan = await s["planner"].generate(request.message, s["tables"])
     return plan
 
 
 @app.post("/api/clarify")
-async def clarify(request: ClarifyRequest):
-    return await planner.check_clarification(request.message, tables)
+async def clarify(request: ClarifyRequest, user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    return await s["planner"].check_clarification(request.message, s["tables"])
 
 
 @app.post("/api/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    tables = s["tables"]
+    chat_history = s["chat_history"]
+    executor = s["executor"]
+    multi_executor = s["multi_executor"]
+    llm = s["llm"]
+    uid = user["id"]
     use_multi = multi_executor.should_activate(request.message, tables)
 
     async def generate():
@@ -308,7 +614,7 @@ async def chat(request: ChatRequest):
             if wf:
                 prev_context = wf.get("conclusion") or wf.get("user_message", "")
                 if prev_context:
-                    verdict = await _classify_implicit_feedback(request.message, prev_context)
+                    verdict = await _classify_implicit_feedback(request.message, prev_context, llm)
                     if verdict in ("good", "bad"):
                         already_rated = bool(wf.get("user_feedback"))
                         if not already_rated:
@@ -318,7 +624,7 @@ async def chat(request: ChatRequest):
                             wf2 = load_workflow(request.last_workflow_id)
                             skills_used = wf2.get("skills_used", []) if wf2 else []
                             for slug in skills_used:
-                                skill_registry.record_feedback(slug, verdict)
+                                s["skill_registry"].record_feedback(slug, verdict)
                         yield _sse({
                             "type": "implicit_feedback_applied",
                             "session_id": request.last_workflow_id,
@@ -329,11 +635,12 @@ async def chat(request: ChatRequest):
         # Auto-compact: if history is long, summarise before the new request
         if len(chat_history) >= AUTO_COMPACT_THRESHOLD:
             old_count = len(chat_history)
-            summary = await _do_compact(chat_history)
+            summary = await _do_compact(chat_history, llm)
             if summary:
                 chat_history[:] = [{"role": "assistant", "content": summary}]
                 yield _sse({"type": "compacted", "old_count": old_count,
                             "summary": summary[:120] + ("…" if len(summary) > 120 else "")})
+        token_total = 0
         try:
             if use_multi:
                 gen = multi_executor.execute_multi(
@@ -353,6 +660,9 @@ async def chat(request: ChatRequest):
                     auto_learn=request.skill_learn,
                 )
             async for event in gen:
+                if isinstance(event, dict) and event.get("type") == "usage":
+                    token_total += event.get("tokens", 0)
+                    continue
                 yield _sse(event)
                 await asyncio.sleep(0)
         except Exception as e:
@@ -361,6 +671,15 @@ async def chat(request: ChatRequest):
             chat_history.append({"role": "user", "content": request.message})
             if len(chat_history) > 40:
                 chat_history[:] = chat_history[-40:]
+            if token_total > 0:
+                auth_db.update_token_usage(uid, token_total)
+                fresh = auth_db.get_user_by_id(uid)
+                yield _sse({
+                    "type": "token_update",
+                    "used": fresh["token_used"],
+                    "budget": fresh["token_budget"],
+                    "has_own_key": bool(fresh.get("own_api_key_enc")),
+                })
             yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -371,16 +690,24 @@ async def chat(request: ChatRequest):
 
 
 @app.post("/api/execute-plan")
-async def execute_plan(request: ExecutePlanRequest):
+async def execute_plan(request: ExecutePlanRequest, user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    tables = s["tables"]
+    chat_history = s["chat_history"]
+    executor = s["executor"]
+    llm = s["llm"]
+    uid = user["id"]
+
     async def generate():
         # Auto-compact before plan execution
         if len(chat_history) >= AUTO_COMPACT_THRESHOLD:
             old_count = len(chat_history)
-            summary = await _do_compact(chat_history)
+            summary = await _do_compact(chat_history, llm)
             if summary:
                 chat_history[:] = [{"role": "assistant", "content": summary}]
                 yield _sse({"type": "compacted", "old_count": old_count,
                             "summary": summary[:120] + ("…" if len(summary) > 120 else "")})
+        token_total = 0
         try:
             async for event in executor.execute_plan(
                 message=request.message,
@@ -391,6 +718,9 @@ async def execute_plan(request: ExecutePlanRequest):
                 code_tool=request.code_tool,
                 auto_learn=request.skill_learn,
             ):
+                if isinstance(event, dict) and event.get("type") == "usage":
+                    token_total += event.get("tokens", 0)
+                    continue
                 yield _sse(event)
                 await asyncio.sleep(0)
         except Exception as e:
@@ -399,6 +729,15 @@ async def execute_plan(request: ExecutePlanRequest):
             chat_history.append({"role": "user", "content": f"[Plan] {request.message}"})
             if len(chat_history) > 40:
                 chat_history[:] = chat_history[-40:]
+            if token_total > 0:
+                auth_db.update_token_usage(uid, token_total)
+                fresh = auth_db.get_user_by_id(uid)
+                yield _sse({
+                    "type": "token_update",
+                    "used": fresh["token_used"],
+                    "budget": fresh["token_budget"],
+                    "has_own_key": bool(fresh.get("own_api_key_enc")),
+                })
             yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -409,12 +748,12 @@ async def execute_plan(request: ExecutePlanRequest):
 
 
 @app.delete("/api/chat/history")
-async def clear_history():
-    chat_history.clear()
+async def clear_history(user: dict = Depends(get_current_user)):
+    get_user_state(user)["chat_history"].clear()
     return {"status": "cleared"}
 
 
-async def _classify_implicit_feedback(user_msg: str, prev_context: str) -> Optional[str]:
+async def _classify_implicit_feedback(user_msg: str, prev_context: str, llm) -> Optional[str]:
     """Classify whether a user's new message implies positive/negative feedback on the previous response.
 
     Returns 'good', 'bad', or None (neutral/unrelated).
@@ -444,7 +783,7 @@ async def _classify_implicit_feedback(user_msg: str, prev_context: str) -> Optio
         return None
 
 
-async def _do_compact(history: List[Dict]) -> Optional[str]:
+async def _do_compact(history: List[Dict], llm) -> Optional[str]:
     """Ask the LLM to summarise chat_history. Returns summary text or None."""
     if not history:
         return None
@@ -472,12 +811,14 @@ async def _do_compact(history: List[Dict]) -> Optional[str]:
 
 
 @app.post("/api/chat/compact")
-async def compact_history():
+async def compact_history(user: dict = Depends(get_current_user)):
     """Manual compaction: summarise history and replace it with the summary."""
+    s = get_user_state(user)
+    chat_history = s["chat_history"]
     old_count = len(chat_history)
     if old_count < 4:
         return {"status": "skipped", "reason": "history too short", "old_count": old_count}
-    summary = await _do_compact(chat_history)
+    summary = await _do_compact(chat_history, s["llm"])
     if not summary:
         return {"status": "error", "reason": "LLM failed to generate summary"}
     chat_history[:] = [{"role": "assistant", "content": summary}]
@@ -489,8 +830,8 @@ async def compact_history():
 # ---------------------------------------------------------------------------
 
 @app.get("/api/skills")
-async def list_skills():
-    return skill_registry.list_all()
+async def list_skills(user: dict = Depends(get_current_user)):
+    return get_user_state(user)["skill_registry"].list_all()
 
 
 class CreateSkillBody(BaseModel):
@@ -500,36 +841,36 @@ class CreateSkillBody(BaseModel):
 
 
 @app.post("/api/skills/create")
-async def create_skill(req: CreateSkillBody):
+async def create_skill(req: CreateSkillBody, user: dict = Depends(get_current_user)):
     """Create a new package skill from name, description, and SKILL.md body."""
     if not req.name or not req.description or not req.body:
         raise HTTPException(400, "name, description, and body are required")
-    return skill_registry.create_package(req.name, req.description, req.body, source="manual")
+    return get_user_state(user)["skill_registry"].create_package(req.name, req.description, req.body, source="manual")
 
 
 @app.delete("/api/skills")
-async def clear_skills():
+async def clear_skills(user: dict = Depends(get_current_user)):
     """Delete all package skills."""
-    return skill_registry.clear_packages()
+    return get_user_state(user)["skill_registry"].clear_packages()
 
 
 # Package (instruction) skills — ClawHub / OpenClaw-compatible
 @app.post("/api/skills/import")
-async def import_skill_package(file: UploadFile = File(...)):
+async def import_skill_package(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     if not (file.filename or "").endswith(".zip"):
         raise HTTPException(400, "Only .zip files are supported")
     content = await file.read()
     try:
-        result = skill_registry.install_from_zip(content)
+        result = get_user_state(user)["skill_registry"].install_from_zip(content)
     except ValueError as e:
         raise HTTPException(400, str(e))
     return result
 
 
 @app.delete("/api/skills/package/{slug}")
-async def delete_skill_package(slug: str):
+async def delete_skill_package(slug: str, user: dict = Depends(get_current_user)):
     try:
-        return skill_registry.delete_package(slug)
+        return get_user_state(user)["skill_registry"].delete_package(slug)
     except ValueError as e:
         raise HTTPException(404, str(e))
 
@@ -539,16 +880,17 @@ class PackageToggleBody(BaseModel):
 
 
 @app.put("/api/skills/package/{slug}/toggle")
-async def toggle_skill_package(slug: str, body: PackageToggleBody):
+async def toggle_skill_package(slug: str, body: PackageToggleBody, user: dict = Depends(get_current_user)):
     try:
-        return skill_registry.toggle_package(slug, body.enabled)
+        return get_user_state(user)["skill_registry"].toggle_package(slug, body.enabled)
     except ValueError as e:
         raise HTTPException(404, str(e))
 
 
 @app.get("/api/skills/package/{slug}/detail")
-async def skill_package_detail(slug: str):
+async def skill_package_detail(slug: str, user: dict = Depends(get_current_user)):
     """Return full detail for a package skill including version history and stats."""
+    skill_registry = get_user_state(user)["skill_registry"]
     pkg = next((p for p in skill_registry._packages if p["slug"] == slug), None)
     if not pkg:
         raise HTTPException(404, "Skill not found")
@@ -578,8 +920,9 @@ async def skill_package_detail(slug: str):
 
 
 @app.post("/api/skills/discover")
-async def discover_skills():
+async def discover_skills(user: dict = Depends(get_current_user)):
     """Scan workflow history for recurring patterns and suggest new skills."""
+    executor = get_user_state(user)["executor"]
     suggestions = await executor.distiller.discover()
     return {"suggestions": suggestions, "count": len(suggestions)}
 
@@ -591,18 +934,19 @@ class AcceptSkillBody(BaseModel):
 
 
 @app.post("/api/skills/accept")
-async def accept_discovered_skill(req: AcceptSkillBody):
+async def accept_discovered_skill(req: AcceptSkillBody, user: dict = Depends(get_current_user)):
     """Create a skill from a discovery suggestion."""
     if not req.name or not req.body:
         raise HTTPException(400, "name and body are required")
-    return skill_registry.create_package(
+    return get_user_state(user)["skill_registry"].create_package(
         req.name, req.description, req.body, source="discovered",
     )
 
 
 @app.post("/api/skills/package/{slug}/improve")
-async def improve_skill(slug: str):
+async def improve_skill(slug: str, user: dict = Depends(get_current_user)):
     """Trigger LLM-driven improvement of a skill based on bad-feedback workflows."""
+    executor = get_user_state(user)["executor"]
     result = await executor.distiller.try_improve(slug)
     if not result:
         return {"status": "no_improvement", "reason": "No actionable feedback found"}
@@ -614,8 +958,8 @@ async def improve_skill(slug: str):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/memory")
-async def get_memory():
-    return memory_manager.get_all()
+async def get_memory(user: dict = Depends(get_current_user)):
+    return get_user_state(user)["memory_manager"].get_all()
 
 
 class MemoryItemBody(BaseModel):
@@ -625,22 +969,22 @@ class MemoryItemBody(BaseModel):
 
 
 @app.post("/api/memory")
-async def set_memory(body: MemoryItemBody):
-    memory_manager.set(body.category, body.key, body.value)
+async def set_memory(body: MemoryItemBody, user: dict = Depends(get_current_user)):
+    get_user_state(user)["memory_manager"].set(body.category, body.key, body.value)
     return {"status": "ok"}
 
 
 @app.delete("/api/memory/{category}/{key}")
-async def delete_memory(category: str, key: str):
-    ok = memory_manager.delete(category, key)
+async def delete_memory(category: str, key: str, user: dict = Depends(get_current_user)):
+    ok = get_user_state(user)["memory_manager"].delete(category, key)
     if not ok:
         raise HTTPException(404, "Memory item not found")
     return {"status": "deleted"}
 
 
 @app.delete("/api/memory")
-async def clear_memory():
-    memory_manager.clear_all()
+async def clear_memory(user: dict = Depends(get_current_user)):
+    get_user_state(user)["memory_manager"].clear_all()
     return {"status": "cleared"}
 
 
@@ -649,15 +993,17 @@ class ForgetBody(BaseModel):
 
 
 @app.post("/api/memory/forget")
-async def forget_memory(body: ForgetBody):
-    forgotten = await memory_manager.forget_by_query(body.query, memory_manager.get_all(), llm)
+async def forget_memory(body: ForgetBody, user: dict = Depends(get_current_user)):
+    s = get_user_state(user)
+    forgotten = await s["memory_manager"].forget_by_query(body.query, s["memory_manager"].get_all(), s["llm"])
     return {"forgotten": forgotten, "count": len(forgotten)}
 
 
 @app.post("/api/memory/summarize")
-async def summarize_memory():
+async def summarize_memory(user: dict = Depends(get_current_user)):
     """Use the LLM to generate a structured user preference document from current memory."""
-    mem = memory_manager.get_all()
+    s = get_user_state(user)
+    mem = s["memory_manager"].get_all()
     # Flatten memory into readable lines
     lines = []
     for cat, items in mem.items():
@@ -682,7 +1028,7 @@ async def summarize_memory():
 
 直接输出 Markdown 文档，不要加任何前言或解释："""
 
-    resp = await llm.chat([{"role": "user", "content": prompt}])
+    resp = await s["llm"].chat([{"role": "user", "content": prompt}])
     return {"summary": (resp.content or "").strip()}
 
 
@@ -696,7 +1042,7 @@ class FeedbackBody(BaseModel):
 
 
 @app.post("/api/workflow/{session_id}/feedback")
-async def workflow_feedback(session_id: str, body: FeedbackBody):
+async def workflow_feedback(session_id: str, body: FeedbackBody, user: dict = Depends(get_current_user)):
     if body.feedback not in ("good", "bad"):
         raise HTTPException(400, "feedback must be 'good' or 'bad'")
     ok = update_workflow_feedback(session_id, body.feedback, body.detail)
@@ -704,6 +1050,9 @@ async def workflow_feedback(session_id: str, body: FeedbackBody):
         raise HTTPException(404, "Workflow not found")
 
     result: Dict[str, Any] = {"status": "ok", "session_id": session_id, "feedback": body.feedback}
+    s = get_user_state(user)
+    skill_registry = s["skill_registry"]
+    executor = s["executor"]
 
     wf = load_workflow(session_id)
     skills_used = wf.get("skills_used", []) if wf else []
@@ -727,12 +1076,12 @@ async def workflow_feedback(session_id: str, body: FeedbackBody):
 
 
 @app.get("/api/workflows")
-async def get_workflows(limit: int = 50):
+async def get_workflows(limit: int = 50, user: dict = Depends(get_current_user)):
     return list_workflows(limit)
 
 
 @app.get("/api/workflow/{session_id}")
-async def get_workflow(session_id: str):
+async def get_workflow(session_id: str, user: dict = Depends(get_current_user)):
     data = load_workflow(session_id)
     if not data:
         raise HTTPException(404, "Workflow not found")
@@ -740,19 +1089,20 @@ async def get_workflow(session_id: str):
 
 
 @app.get("/api/growth/profile")
-async def growth_profile():
+async def growth_profile(user: dict = Depends(get_current_user)):
+    skill_registry = get_user_state(user)["skill_registry"]
     profile = get_growth_profile()
     profile["skills_stats"] = skill_registry.get_skill_stats()
     return profile
 
 
 @app.get("/api/growth/patterns")
-async def growth_patterns():
+async def growth_patterns(user: dict = Depends(get_current_user)):
     return find_recurring_patterns(min_occurrences=2)
 
 
 @app.get("/api/growth/domains")
-async def get_domains():
+async def get_domains(user: dict = Depends(get_current_user)):
     """List all domains (built-in + custom)."""
     return list_domains()
 
@@ -763,7 +1113,7 @@ class CustomDomainBody(BaseModel):
 
 
 @app.post("/api/growth/domains")
-async def create_custom_domain(body: CustomDomainBody):
+async def create_custom_domain(body: CustomDomainBody, user: dict = Depends(get_current_user)):
     """Add or update a custom domain with keywords."""
     if not body.name or not body.keywords:
         raise HTTPException(400, "name and keywords are required")
@@ -772,8 +1122,8 @@ async def create_custom_domain(body: CustomDomainBody):
 
 
 @app.get("/api/skills/stats")
-async def skill_stats():
-    return skill_registry.get_skill_stats()
+async def skill_stats(user: dict = Depends(get_current_user)):
+    return get_user_state(user)["skill_registry"].get_skill_stats()
 
 
 # ---------------------------------------------------------------------------
@@ -788,8 +1138,11 @@ class DemoLoadBody(BaseModel):
 
 
 @app.post("/api/demo/load")
-async def demo_load(body: DemoLoadBody):
+async def demo_load(body: DemoLoadBody, user: dict = Depends(get_current_user)):
     """Load example CSV files from the examples/ directory into the table store."""
+    s = get_user_state(user)
+    tables = s["tables"]
+    chat_history = s["chat_history"]
     if body.clear:
         tables.clear()
         chat_history.clear()
@@ -820,7 +1173,7 @@ async def demo_load(body: DemoLoadBody):
 
 
 @app.get("/api/demo/scenarios")
-async def demo_scenarios():
+async def demo_scenarios(user: dict = Depends(get_current_user)):
     """Return metadata about available demo files."""
     result = []
     for f in sorted(EXAMPLES_DIR.glob("*.csv")):

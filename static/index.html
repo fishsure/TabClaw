@@ -47,6 +47,7 @@
       <button class="sidebar-tab active" data-tab="tables">Tables</button>
       <button class="sidebar-tab" data-tab="skills">Skills</button>
       <button class="sidebar-tab" data-tab="memory">Memory</button>
+      <button class="sidebar-tab" data-tab="settings">Settings</button>
     </div>
 
     <!-- Tables panel -->
@@ -110,6 +111,81 @@
         <input type="text" id="forget-input" placeholder='Forget: "my language preference"…' />
         <button class="btn sm danger" id="forget-btn">Forget</button>
       </div>
+    </div>
+    <!-- Settings panel -->
+    <div class="sidebar-panel" id="panel-settings">
+      <div class="sidebar-panel-header">
+        <span>Settings</span>
+      </div>
+      <div class="sidebar-scroll">
+        <!-- User info -->
+        <div class="settings-section">
+          <div class="settings-label">Account</div>
+          <div class="settings-user-row">
+            <span id="settings-username" class="settings-username"></span>
+            <span id="settings-own-key-badge" class="own-key-badge hidden">Own Key</span>
+          </div>
+          <button class="btn sm danger" id="settings-logout-btn" style="margin-top:8px">Sign Out</button>
+        </div>
+
+        <!-- Token quota (hidden when user has own key) -->
+        <div class="settings-section" id="settings-quota-section">
+          <div class="settings-label">Free Token Quota</div>
+          <div class="token-bar-wrap">
+            <div class="token-bar"><div class="token-bar-fill" id="settings-token-fill"></div></div>
+            <div id="settings-token-text" class="settings-token-text"></div>
+          </div>
+        </div>
+
+        <!-- API Key config -->
+        <div class="settings-section">
+          <div class="settings-label">Custom API Key and Model</div>
+          <div id="settings-key-status" class="settings-key-status hidden">
+            <span class="key-status-dot"></span>
+            <span id="settings-key-status-text"></span>
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">
+            Use your own API key and model to avoid free quota limits.
+          </p>
+
+          <div class="form-group" style="margin-bottom:6px">
+            <label class="form-label" style="font-size:11px">1) Provider</label>
+            <select class="form-select" id="settings-provider">
+              <option value="">- Select provider -</option>
+            </select>
+          </div>
+
+          <div id="settings-provider-note" class="provider-note hidden"></div>
+
+          <div class="form-group" style="margin-bottom:6px" id="settings-model-group">
+            <label class="form-label" style="font-size:11px">2) Model</label>
+            <select class="form-select" id="settings-model-select">
+              <option value="">- Select provider first -</option>
+            </select>
+            <input class="form-input" id="settings-model-custom" type="text"
+              placeholder="Custom model name, e.g. deepseek-ai/DeepSeek-V3"
+              style="margin-top:4px;display:none" />
+          </div>
+
+          <div class="form-group" style="margin-bottom:6px">
+            <label class="form-label" style="font-size:11px">3) API Key</label>
+            <input class="form-input" id="settings-api-key" type="password" autocomplete="new-password" placeholder="sk-..." />
+          </div>
+
+          <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label" style="font-size:11px">4) Base URL (auto-filled, editable)</label>
+            <input class="form-input" id="settings-base-url" type="text" placeholder="https://api.openai.com/v1" />
+          </div>
+
+          <div style="display:flex;gap:6px">
+            <button class="btn sm primary" id="settings-save-key-btn">Save</button>
+            <button class="btn sm danger" id="settings-clear-key-btn">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="token-quota-footer" class="token-quota-footer hidden">
+      Free: <span id="token-footer-text">0k / 1000k</span>
     </div>
     <div class="growth-entry">
       <button class="btn growth-btn" id="growth-btn" onclick="app.showGrowthDashboard()" title="View learning progress and milestones">

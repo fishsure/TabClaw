@@ -2,6 +2,7 @@
 setting.txt
 .env
 *.env
+tabclaw.service
 
 # ── Runtime state (user-generated, not part of source) ──────────────────────
 data/memory.json

@@ -46,6 +46,7 @@ nav:
   - Architecture: architecture.md
   - Skills Reference: skills.md
   - Configuration: configuration.md
+  - Deployment: deployment.md
 
 plugins:
   - search
